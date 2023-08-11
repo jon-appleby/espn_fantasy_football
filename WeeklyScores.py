@@ -111,11 +111,17 @@ def merge_data(scores_for_df, teams_for_df):
     return combine_df
 
 
-def chart_scores(data):
+def chart_scores(data, data_year):
     sns.set_theme()
     # sns.relplot(data=data, x='Matchup_Period', y='Team_Points', kind='line', hue='Team_Name')
     # sns.displot(data, x='Team_Points', kind='kde')
-    chart = sns.boxplot(data=data, x='Team_Points', y='Week_Avg')
+    # chart = sns.jointplot(data=data, x='Team_Name', y='Team_Points', kind='boxplot', order='Team_Points')
+    chart_order = data.groupby(by=['Team_Name'])['Team_Points'].median().sort_values(ascending=False).index.to_list()
+    chart = sns.boxplot(data=data,
+                        x='Team_Name',
+                        y='Team_Points',
+                        order=chart_order).set(
+        title=f'Median scores for weeks {min(df["Matchup_Period"])}-{max(df["Matchup_Period"])} {data_year}')
     # chart.plot_joint(sns.histplot)
     # chart.plot_marginals(sns.boxplot)
     plt.show()
@@ -148,6 +154,6 @@ if __name__ == '__main__':
     score_df = create_matchup_data(schedule_data)
     team_df = create_team_data(teams)
     df = merge_data(score_df, team_df)
-    chart_scores(df)
+    chart_scores(df, year)
 
     print(df.head().to_string())
