@@ -1,0 +1,29 @@
+https://cran.r-project.org/web/packages/ffscrapr/vignettes/espn_getendpoint.html
+
+# The ESPN Fantasy API is typically accessed from two endpoints:
+https://fantasy.espn.com/apis/v3/games/ffl/seasons/{season}/segments/0/leagues/{league_id} # for 2018 onward
+https://fantasy.espn.com/apis/v3/games/ffl/leagueHistory/{league_id}?seasonId={season} # for 2017 or earlier
+
+# Here’s a non-exhaustive list of view endpoints that I know of:
+(use ?view={endpoint} after above URL to see json in browser, or ?view={endpoint}&view={endpoint} to combine)
+    mTeam
+    mMatchup
+    mRoster
+    mSettings
+    mBoxscore
+    mMatchupScore
+    kona_player_info
+    player_wl
+    mSchedule
+    mScoreboard
+
+############################
+# Fantasy ESPN API Library #
+############################
+https://github.com/cwendt94/espn-api/wiki
+pip install espn_api
+
+############################
+# General ESPN API Library #
+############################
+https://gist.github.com/akeaswaran/b48b02f1c94f873c6655e7129910fc3b
