@@ -3,6 +3,7 @@ import pandas as pd
 from setup_info import SWID, ESPN_S2, LEAGUE_ID
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 
 def fetch_boxscore_data(url_input):
@@ -55,7 +56,7 @@ def create_team_data(team_for_dict):
 
 
 ###############################################################
-# REMOVED temporarily - replace with "ESPNFF-ActualvsOptimal" #
+# REMOVED temporarily - replace with ActualvsOptimalScores.py #
 ###############################################################
 # def get_score_data(url, week_input):
 #     week_data = []
@@ -95,37 +96,68 @@ def merge_data(scores_for_df, teams_for_df):
     combine_df = pd.merge(combine_df, teams_for_df, left_on='Team2_ID', right_on='Team_ID')
 
     combine_df = combine_df.drop(['Team_ID_x', 'Team_ID_y'], axis=1)
-    combine_df.rename(columns={'Team_Name_x': 'Team_Name',
-                               'Team_Name_y': 'Opp_Name',
-                               'Team1_ID': 'Team_ID',
-                               'Team1_Points': 'Team_Points',
-                               'Team2_ID': 'Opp_ID',
-                               'Team2_Points': 'Opp_Points'},
+    combine_df.rename(columns={'Team_Name_x': 'team_name',
+                               'Team_Name_y': 'opp_name',
+                               'Team1_ID': 'team_id',
+                               'Team1_Points': 'team_points',
+                               'Team2_ID': 'opp_id',
+                               'Team2_Points': 'opp_points',
+                               'Matchup_Period': 'matchup_period'},
                       inplace=True)
 
-    week_avg = combine_df.groupby(['Matchup_Period']).mean(numeric_only=True, )['Team_Points']
+    week_avg = combine_df.groupby(['matchup_period']).mean(numeric_only=True)['team_points']
     combine_df = pd.merge(combine_df, week_avg,
-                          left_on='Matchup_Period',
-                          right_on='Matchup_Period').rename(columns={'Team_Points_x': 'Team_Points',
-                                                                     'Team_Points_y': 'Week_Avg'})
+                          left_on='matchup_period',
+                          right_on='matchup_period').rename(columns={'team_points_x': 'team_points',
+                                                                     'team_points_y': 'week_avg'})
+
+    combine_df['win'] = np.where(combine_df['team_points'] > combine_df['opp_points'], 1, 0)
+    combine_df['all_play_win'] = np.where(combine_df['team_points'] > combine_df['week_avg'], 1, 0)
+
     return combine_df
 
 
 def chart_scores(data, data_year):
-    sns.set_theme()
-    # sns.relplot(data=data, x='Matchup_Period', y='Team_Points', kind='line', hue='Team_Name')
-    # sns.displot(data, x='Team_Points', kind='kde')
-    # chart = sns.jointplot(data=data, x='Team_Name', y='Team_Points', kind='boxplot', order='Team_Points')
-    chart_order = data.groupby(by=['Team_Name'])['Team_Points'].median().sort_values(ascending=False).index.to_list()
-    chart = sns.boxplot(data=data,
-                        x='Team_Name',
-                        y='Team_Points',
-                        order=chart_order).set(
-        title=f'Median scores for weeks {min(df["Matchup_Period"])}-{max(df["Matchup_Period"])} {data_year}')
-    # chart.plot_joint(sns.histplot)
-    # chart.plot_marginals(sns.boxplot)
+    sns.set_theme(style='darkgrid', palette=None)
+
+    # # create boxplot
+    box_chart_order = data.groupby(
+        by=['team_name'])['team_points'].median().sort_values(ascending=False).index.to_list()
+    sns.boxplot(data=data,
+                x='team_name',
+                y='team_points',
+                order=box_chart_order  # set descending based on median of total score
+                ).set(title=f'Median scores for weeks '
+                            f'{min(df["matchup_period"])}-{max(df["matchup_period"])} {data_year}')  # set title
     plt.show()
 
+    # scores week by week
+    sns.regplot(data=data,
+                x='matchup_period',
+                y='week_avg').set(title=f'Weekly Avg Score for weeks '
+                                        f'{min(df["matchup_period"])}-{max(df["matchup_period"])} {data_year}')
+    plt.show()
+
+    # all play win count
+    all_play = data.groupby(data['team_name'])['all_play_win'].sum().sort_values(ascending=False).reset_index()
+    sns.barplot(data=all_play,
+                y='team_name',
+                x='all_play_win',
+                palette='Spectral').set(title=f'Wins against Weekly Avg for weeks '
+                                                           f'{min(df["matchup_period"])}-{max(df["matchup_period"])} '
+                                                           f'{data_year}')
+    plt.show()
+
+    # team vs opponents
+    grid = sns.FacetGrid(data, col='team_name', col_wrap=4)
+    grid.map_dataframe(sns.kdeplot, y='opp_points', x='team_points', fill=True, cmap='magma')
+    grid.set_axis_labels(y_var='Opponent Points', x_var='Team Points')
+    grid.set_titles(col_template='{col_name} Point Density')
+    plt.show()
+
+
+# TODO: highest win-loss margin
+# TODO: number of lucky wins or unlucky loses (week score vs week avg)
 
 if __name__ == '__main__':
     year = 2022
@@ -154,6 +186,8 @@ if __name__ == '__main__':
     score_df = create_matchup_data(schedule_data)
     team_df = create_team_data(teams)
     df = merge_data(score_df, team_df)
+    print(df.head().to_string())
+
     chart_scores(df, year)
 
-    print(df.head().to_string())
+    # df.to_excel('score_data.xlsx')
