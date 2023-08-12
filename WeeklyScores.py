@@ -4,12 +4,35 @@ from setup_info import SWID, ESPN_S2, LEAGUE_ID
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+import matplotlib.colors as mcolors
 
 
-def fetch_boxscore_data(url_input):
-    req = requests.get(url_input, cookies={"SWID": SWID, "espn_s2": ESPN_S2})
+def fetch_boxscore_data(url):
+    req = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2})
     data = req.json()
     return data['schedule'], data['teams']
+
+
+def get_draftpos_rank(url):
+    req = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2})
+    data = req.json()
+
+    # iterate through the list and append to dict using index + 1 as team ID
+    order = data['settings']['draftSettings']['pickOrder']
+    pick_order = []
+    for index, pos in enumerate(order):
+        index += 1
+        pick_order.append({'team_id': str(pos), 'draft_pos': index})
+
+    # iterate thru list of teams and get rank + team id
+    rank_list = []
+    teams = data['teams']
+    for team in teams:
+        rank = team['rankCalculatedFinal']
+        team_id = team['id']
+        rank_list.append({'rank': rank, 'team_id': str(team_id)})
+
+    return pd.DataFrame(pick_order), pd.DataFrame(rank_list)
 
 
 def create_matchup_data(schedules):
@@ -91,7 +114,7 @@ def create_team_data(team_for_dict):
 # slates = get_slates(slate_data)
 ################################################################
 
-def merge_data(scores_for_df, teams_for_df):
+def merge_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df):
     combine_df = pd.merge(scores_for_df, teams_for_df, left_on='Team1_ID', right_on='Team_ID')
     combine_df = pd.merge(combine_df, teams_for_df, left_on='Team2_ID', right_on='Team_ID')
 
@@ -105,6 +128,9 @@ def merge_data(scores_for_df, teams_for_df):
                                'Matchup_Period': 'matchup_period'},
                       inplace=True)
 
+    combine_df = pd.merge(combine_df, draft_for_df, left_on='team_id', right_on='team_id')
+    combine_df = pd.merge(combine_df, rank_for_df, left_on='team_id', right_on='team_id')
+
     week_avg = combine_df.groupby(['matchup_period']).mean(numeric_only=True)['team_points']
     combine_df = pd.merge(combine_df, week_avg,
                           left_on='matchup_period',
@@ -113,13 +139,63 @@ def merge_data(scores_for_df, teams_for_df):
 
     combine_df['win'] = np.where(combine_df['team_points'] > combine_df['opp_points'], 1, 0)
     combine_df['all_play_win'] = np.where(combine_df['team_points'] > combine_df['week_avg'], 1, 0)
+    combine_df['draft_rank_diff'] = combine_df['draft_pos'] - combine_df['rank']
 
     return combine_df
 
 
 def chart_scores(data, data_year):
     sns.set_theme(style='darkgrid', palette=None)
+    ''' Filter data to only regular season
+    Remove below to get all weeks'''
     data = data.loc[data['matchup_period'] < 15]
+
+    # compare draft pos to rank
+    pos_rank = sns.regplot(data=data,
+                           x='draft_pos',
+                           y='rank',
+                           robust=True)
+    pos_rank.invert_yaxis()
+    plt.tight_layout()
+    plt.savefig('./outputs/1pos to rank.png', bbox_inches='tight')
+    plt.show()
+
+    # visualize where each player moved through the year from draft to final rank
+    diff_data = data.groupby(by=['team_name',
+                                 'draft_pos'])['draft_rank_diff'].min().reset_index().sort_values(by=['draft_pos'])
+    color_map = mcolors.LinearSegmentedColormap.from_list("CustomMap", ['#d4382c', '#deaa3a', '#0fa32c'])
+    min_diff = min(diff_data['draft_rank_diff'])
+    max_diff = max(diff_data['draft_rank_diff'])
+    midpoint = 0
+    norm = mcolors.TwoSlopeNorm(vmin=min_diff, vcenter=midpoint, vmax=max_diff)
+    sns.barplot(data=diff_data,
+                x='draft_rank_diff',
+                y='team_name',
+                palette=color_map(norm(diff_data['draft_rank_diff'])))
+    plt.tight_layout()
+    plt.savefig('./outputs/2diff draft to final.png', bbox_inches='tight')
+    plt.show()
+
+    # scores week by week
+    sns.regplot(data=data,
+                x='matchup_period',
+                y='week_avg').set(title=f'Weekly Avg Score for weeks '
+                                        f'{min(data["matchup_period"])}-{max(data["matchup_period"])} {data_year}')
+    plt.tight_layout()
+    plt.savefig('./outputs/3weekly_avg_scores.png', bbox_inches='tight')
+    plt.show()
+
+    # all play win count
+    all_play = data.groupby(data['team_name'])['all_play_win'].sum().sort_values(ascending=False).reset_index()
+    sns.barplot(data=all_play,
+                y='team_name',
+                x='all_play_win',
+                palette='crest').set(title=f'Wins against Weekly Avg for weeks '
+                                           f'{min(data["matchup_period"])}-{max(data["matchup_period"])} '
+                                           f'{data_year}')
+    plt.tight_layout()
+    plt.savefig('./outputs/4wins_against_week_avg.png')
+    plt.show()
 
     # create boxplot
     box_chart_order = data.groupby(
@@ -132,28 +208,7 @@ def chart_scores(data, data_year):
                             f'{min(data["matchup_period"])}-{max(data["matchup_period"])} {data_year}')  # set title
     plt.xticks(rotation=90)
     plt.tight_layout()
-    plt.savefig('./outputs/median_scores.png', bbox_inches='tight')
-    plt.show()
-
-    # scores week by week
-    sns.regplot(data=data,
-                x='matchup_period',
-                y='week_avg').set(title=f'Weekly Avg Score for weeks '
-                                        f'{min(data["matchup_period"])}-{max(data["matchup_period"])} {data_year}')
-    plt.tight_layout()
-    plt.savefig('./outputs/weekly_avg_scores.png', bbox_inches='tight')
-    plt.show()
-
-    # all play win count
-    all_play = data.groupby(data['team_name'])['all_play_win'].sum().sort_values(ascending=False).reset_index()
-    sns.barplot(data=all_play,
-                y='team_name',
-                x='all_play_win',
-                palette='crest').set(title=f'Wins against Weekly Avg for weeks '
-                                           f'{min(data["matchup_period"])}-{max(data["matchup_period"])} '
-                                           f'{data_year}')
-    plt.tight_layout()
-    plt.savefig('./outputs/wins_against_week_avg.png')
+    plt.savefig('./outputs/5median_scores.png', bbox_inches='tight')
     plt.show()
 
     # team vs opponents
@@ -162,7 +217,7 @@ def chart_scores(data, data_year):
     grid.set_axis_labels(y_var='Opponent Points', x_var='Team Points')
     grid.set_titles(col_template='{col_name} Point Density')
     plt.tight_layout()
-    plt.savefig('./outputs/score_against_opp_density.png', bbox_inches='tight')
+    plt.savefig('./outputs/6score_against_opp_density.png', bbox_inches='tight')
     plt.show()
 
 
@@ -176,6 +231,10 @@ if __name__ == '__main__':
                    f'leagues/{league_id}?view=mBoxscore'
     matchup_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
                   f'leagues/{league_id}?view=mMatchup&view=mMatchupScore'
+    scoreboard_settings_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
+                              f'leagues/{league_id}?view=mMatchup&view=mScoreboard&view=mSettings'  # use to get rankCalculatedFinal
+    settings_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
+                   f'leagues/{league_id}?view=mMatchup&view=mSettings'  # use to get pickOrder
 
     weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
     posns = ['QB', 'RB', 'WR', 'Flex', 'TE', 'D/ST', 'K']
@@ -193,10 +252,13 @@ if __name__ == '__main__':
     }
 
     schedule_data, teams = fetch_boxscore_data(boxscore_url)
+    draft_pos, rank_df = get_draftpos_rank(scoreboard_settings_url)
     score_df = create_matchup_data(schedule_data)
     team_df = create_team_data(teams)
-    df = merge_data(score_df, team_df)
-    print(df.head().to_string())
+    df = merge_data(score_df, team_df, draft_pos, rank_df)
+    # print(df.head().to_string())
+    # print(df.info())
+    # print(df.corr(numeric_only=True).to_string())
 
     chart_scores(df, year)
 
