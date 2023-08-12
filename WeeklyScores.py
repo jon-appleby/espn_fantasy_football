@@ -250,6 +250,17 @@ def chart_team_opp_density(data, week, path=None):
     plt.show()
 
 
+def print_and_save_charts():
+    # set a max week (e.g. use 14 to only see regular season)
+    week_max = 14
+    chart_draft_pos_rank(df, week_max, './outputs/1pos to rank.png')
+    chart_draft_vs_final(df, week_max, './outputs/2diff draft to final.png')
+    chart_week_avg(df, week_max, './outputs/3weekly_avg_scores.png')
+    chart_all_play(df, week_max, './outputs/4wins_against_week_avg.png')
+    chart_team_median(df, week_max, './outputs/5median_scores.png')
+    chart_team_opp_density(df, week_max, './outputs/6score_against_opp_density.png')
+
+
 # TODO: get player ytd average score
 # TODO: get player ytd power ranking
 
@@ -260,7 +271,7 @@ if __name__ == '__main__':
                    f'leagues/{league_id}?view=mBoxscore'
     matchup_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
                   f'leagues/{league_id}?view=mMatchup&view=mMatchupScore'
-    # use to get rankCalculatedFinal
+    # use to get "rankCalculatedFinal"
     scoreboard_settings_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
                               f'leagues/{league_id}?view=mMatchup&view=mScoreboard&view=mSettings'
 
@@ -285,15 +296,14 @@ if __name__ == '__main__':
     score_df = create_matchup_data(schedule_data)
     team_df = create_team_data(teams)
     df = merge_data(score_df, team_df, draft_pos, rank_df)
+
+    # run the charts
+    # print_and_save_charts()
+
+    # output and printing for testing
     # df.to_excel('/outputs/score_data.xlsx')
     print(df.head().to_string())
     # print(df.info())
     # print(df.corr(numeric_only=True).to_string())
 
-    week_max = 14  # set a max week (e.g. use 14 to only see regular season)
-    # chart_draft_pos_rank(df, week_max, './outputs/1pos to rank.png')
-    # chart_draft_vs_final(df, week_max, './outputs/2diff draft to final.png')
-    # chart_week_avg(df, week_max, './outputs/3weekly_avg_scores.png')
-    # chart_all_play(df, week_max, './outputs/4wins_against_week_avg.png')
-    # chart_team_median(df, week_max, './outputs/5median_scores.png')
-    # chart_team_opp_density(df, week_max, './outputs/6score_against_opp_density.png')
+

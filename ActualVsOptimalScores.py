@@ -1,7 +1,10 @@
-from setup_info import SWID, ESPN_S2
+from setup_info import SWID, ESPN_S2, LEAGUE_ID
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
+
+api_cache = {}
 
 
 def get_matchups(league_id, season, week, swid='', espn=''):
@@ -106,10 +109,14 @@ def compute_pts(slates, posns, struc):
             proflex = -100  # "proj" pts scored by flex
             for pos, num in zip(posns, struc):
                 # actual points, sorted by either actual or proj outcome
-                t = slate.query('Pos == @pos').sort_values(by=method, ascending=False).filter(['Actual']).values[:, 0]
+                t = slate.query('Pos == @pos') \
+                        .sort_values(by=method, ascending=False) \
+                        .filter(['Actual']).values[:, 0]
 
                 # projected points, sorted by either actual or proj outcome
-                t2 = slate.query('Pos == @pos').sort_values(by=method, ascending=False).filter(['Proj']).values[:, 0]
+                t2 = slate.query('Pos == @pos') \
+                         .sort_values(by=method, ascending=False) \
+                         .filter(['Proj']).values[:, 0]
 
                 # sum up points
                 pts[cat] += t[:num].sum()
@@ -128,22 +135,10 @@ def compute_pts(slates, posns, struc):
     return data
 
 
-def get_teamnames(league_id, season, week, swid='', espn=''):
-    url = 'https://fantasy.espn.com/apis/v3/games/ffl/seasons/' + \
-          str(season) + '/segments/0/leagues/' + str(league_id)
-
-    r = requests.get(url + '?view=mTeam',
-                     params={'scoringPeriodId': week},
-                     cookies={"SWID": swid, "espn_s2": espn})
-    d = r.json()
-
-    tm_names = {tm['id']: tm['location'].strip() + ' ' + tm['nickname'].strip() \
-                for tm in d['teams']}
-
-    return tm_names
-
-
 def get_team_info():
+    '''
+    get team name info and concat
+    '''
     # pull team/id (using other script) to join and get team names
     url_base = 'https://fantasy.espn.com/apis/v3/games/ffl/seasons/2022/segments/0/leagues/REDACTED_LEAGUE_ID'
 
@@ -152,28 +147,72 @@ def get_team_info():
 
     team_df_temp = [[
         team_info['id'],
-        team_info['nickname']]
+        team_info['nickname'],
+        team_info['location']]
         for team_info in data['teams']]
-    # print(team_df_temp)
-    teams = pd.DataFrame(team_df_temp, columns=['id', 'nickname'])
+    teams = pd.DataFrame(team_df_temp, columns=['id', 'nickname', 'location'])
+    teams['team_name'] = teams['location'] + ' ' + teams['nickname']
+    teams.drop(columns=['nickname', 'location'], axis=1)
+
     return teams
 
 
 def transform_data(data, team):
+    '''
+    get data and teams, merge and prepare data for use later
+    '''
     point_df = pd.DataFrame(data).transpose()
     point_df['TeamID'] = range(1, 1 + len(point_df))
-    point_df = pd.merge(point_df, team[['id', 'nickname']], left_on='TeamID', right_on='id', how='left')
-    point_df = point_df[['TeamID', 'nickname', 'opts', 'apts', 'epts']]
-    point_df['MissedPoints'] = round(point_df['opts'] - point_df['apts'], 2)
-    point_df['Efficiency'] = (round(point_df['apts'] / point_df['opts'], 3) * 100)
+    point_df = pd.merge(point_df, team[['id', 'team_name']], left_on='TeamID', right_on='id', how='left')
+    point_df = point_df.rename(columns={'opts': 'optimal_pts',
+                                        'apts': 'actual_pts',
+                                        'epts': 'espn_proj',
+                                        'TeamID': 'team_id'}).drop(columns='id')
+    point_df['missed_pts'] = round(point_df['optimal_pts'] - point_df['actual_pts'], 2)
+    point_df['efficiency'] = (round(point_df['actual_pts'] / point_df['optimal_pts'], 3) * 100)
+    point_df['espn_accuracy'] = (round(point_df['espn_proj'] / point_df['optimal_pts'], 3) * 100)
 
-    print(point_df)
+    return point_df
+
+
+def chart_oae_pts(data):
+    sns.set_theme(style='darkgrid')
+
+    # sort for chart
+    data = data.sort_values(by='actual_pts', ascending=False)
+
+    actual_pt_color = 'teal'
+    optimal_pt_colr = 'gray'
+    # Set up the figure and axes
+    plt.figure(figsize=(10, 8))
+    ax = sns.stripplot(data=data, x='actual_pts', y='team_name', marker='D', size=5, color=actual_pt_color)
+
+    # Add optimal_pts as end points of the line
+    ax.hlines(y=data['team_name'], xmin=data['actual_pts'], xmax=data['optimal_pts'], color=optimal_pt_colr)
+
+    # Add espn_proj as symbols on the line
+    ax.plot(data['espn_proj'], range(len(data)), 'r*', markersize=6)  # r* is a red star
+
+    # Add dots at the end of the lines (optimal_pts and actual_pts)
+    plt.scatter(data['optimal_pts'], range(len(data)), color=optimal_pt_colr, marker='o', s=40, label='optimal_pts')
+    plt.scatter(data['actual_pts'], range(len(data)), color=actual_pt_color, marker='o', s=40, label='actual_pts')
+    plt.scatter(data['espn_proj'], range(len(data)), color='red', marker='*', s=35, label='espn_proj')
+
+    # Set labels and title
+    plt.xlabel('Points')
+    plt.ylabel('Team')
+    plt.title('Actual vs Optimal Points')
+
+    # Add legend
+    plt.legend()
+
+    plt.show()
 
 
 if __name__ == '__main__':
     swid = SWID
     espn = ESPN_S2
-
+    league_id = LEAGUE_ID
     slotcodes = {
         0: 'QB', 1: 'QB',
         2: 'RB', 3: 'RB',
@@ -185,18 +224,21 @@ if __name__ == '__main__':
         21: 'IR',
         23: 'Flex'
     }
-
-    league_id = REDACTED_LEAGUE_ID
-    season = 2022
-    week = 6
     posns = ['QB', 'RB', 'WR', 'Flex', 'TE', 'D/ST', 'K']
     struc = [1, 2, 2, 1, 1, 1, 1]
+
+    season = 2022
+    week = 6
 
     d = get_matchups(league_id, season, week, swid=swid, espn=espn)
     slates = get_slates(d)
     point_data = compute_pts(slates, posns, struc)
     team_df = get_team_info()
-    # not used, check diff b/w this and team_df
-    # tms = get_teamnames(league_id, season, week, swid=swid, espn=espn)
 
-    transform_data(point_data, team_df)
+    # prints for testing
+    print_output = transform_data(point_data, team_df)
+    print(print_output.to_string())
+
+    chart_oae_pts(transform_data(point_data, team_df))
+
+
