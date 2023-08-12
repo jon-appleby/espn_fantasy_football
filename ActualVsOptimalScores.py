@@ -1,21 +1,7 @@
+from setup_info import SWID, ESPN_S2
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
-
-slotcodes = {
-    0: 'QB', 1: 'QB',
-    2: 'RB', 3: 'RB',
-    4: 'WR', 5: 'WR',
-    6: 'TE', 7: 'TE',
-    16: 'D/ST',
-    17: 'K',
-    20: 'Bench',
-    21: 'IR',
-    23: 'Flex'
-}
-
-swid = "REDACTED_SWID"
-espn = "AEBBxiVWbf1QtxwqBpfaDr8GfBKPQ%2FoxsC26BJ4yMs36M9dyqjOIoxnMkLUJTWOwxF9Xw21z%2BJjLRqLNAFJxO9Lt4RG8RwUKqSQzU3BbJn6oMw%2BJleQ9SNIxopGmrDZn2Ts3IQBEvDTdYZ1CzAYPa6vRgWXcK0%2F%2FJV5l9iDlBiNkMbQMFPcrStfIPnoPQ%2FCyn8CPq4RbGJvgG6yEekwRruwd05XapX0dPp%2FGHcV2nDP9qlbuH3nac7mFE%2FI6c%2FHh1N26Vm8SG60sS5YmQSu94vHr "
 
 
 def get_matchups(league_id, season, week, swid='', espn=''):
@@ -29,7 +15,6 @@ def get_matchups(league_id, season, week, swid='', espn=''):
     r = requests.get(url + '?view=mMatchup&view=mMatchupScore',
                      params={'scoringPeriodId': week, 'matchupPeriodId': week},
                      cookies={"SWID": swid, "espn_s2": espn})
-    # print(r.json())
     return r.json()
 
 
@@ -81,10 +66,8 @@ def get_slates(json):
                 pos = 'K'
 
             slate.append([name, slotid, slot, pos, act, proj])
-            # print(slate)
         slate = pd.DataFrame(slate, columns=['Name', 'SlotID', 'Slot', 'Pos', 'Actual', 'Proj'])
         slates[team['id']] = slate
-    # print(slates)
     return slates
 
 
@@ -160,43 +143,60 @@ def get_teamnames(league_id, season, week, swid='', espn=''):
     return tm_names
 
 
-league_id = REDACTED_LEAGUE_ID
+def get_team_info():
+    # pull team/id (using other script) to join and get team names
+    url_base = 'https://fantasy.espn.com/apis/v3/games/ffl/seasons/2022/segments/0/leagues/REDACTED_LEAGUE_ID'
 
-season = 2022
-week = 6
-posns = ['QB', 'RB', 'WR', 'Flex', 'TE', 'D/ST', 'K']
-struc = [1, 2, 2, 1, 1, 1, 1]
+    req = requests.get(url_base, cookies={'swid': SWID, 'espn_s2': ESPN_S2})
+    data = req.json()
 
-d = get_matchups(league_id, season, week, swid=swid, espn=espn)
-slates = get_slates(d)
-wdata = compute_pts(slates, posns, struc)
-tms = get_teamnames(league_id, season, week, swid=swid, espn=espn)
+    team_df_temp = [[
+        team_info['id'],
+        team_info['nickname']]
+        for team_info in data['teams']]
+    # print(team_df_temp)
+    teams = pd.DataFrame(team_df_temp, columns=['id', 'nickname'])
+    return teams
 
-wdataDf = pd.DataFrame(wdata)
-wdataDf = wdataDf.transpose()
 
-# pull team/id (using other script) to join and get team names
-url2 = "https://fantasy.espn.com/apis/v3/games/ffl/seasons/2022/segments/0/leagues/REDACTED_LEAGUE_ID"
+def transform_data(data, team):
+    point_df = pd.DataFrame(data).transpose()
+    point_df['TeamID'] = range(1, 1 + len(point_df))
+    point_df = pd.merge(point_df, team[['id', 'nickname']], left_on='TeamID', right_on='id', how='left')
+    point_df = point_df[['TeamID', 'nickname', 'opts', 'apts', 'epts']]
+    point_df['MissedPoints'] = round(point_df['opts'] - point_df['apts'], 2)
+    point_df['Efficiency'] = (round(point_df['apts'] / point_df['opts'], 3) * 100)
 
-req = requests.get(url2,
-                   cookies={"swid": "REDACTED_SWID",
-                            "espn_s2": "AEBBxiVWbf1QtxwqBpfaDr8GfBKPQ%2FoxsC26BJ4yMs36M9dyqjOIoxnMkLUJTWOwxF9Xw21z%2"
-                                       "BJjLRqLNAFJxO9Lt4RG8RwUKqSQzU3BbJn6oMw%2BJleQ9SNIxopGmrDZn2Ts3IQBEvDTdYZ1CzAY"
-                                       "Pa6vRgWXcK0%2F%2FJV5l9iDlBiNkMbQMFPcrStfIPnoPQ%2FCyn8CPq4RbGJvgG6yEekwRruwd0"
-                                       "5XapX0dPp%2FGHcV2nDP9qlbuH3nac7mFE%2FI6c%2FHh1N26Vm8SG60sS5YmQSu94vHr"}
-                   )
-data = req.json()
+    print(point_df)
 
-dfTeam = [[
-    yeet['id'],
-    yeet['nickname']]
-    for yeet in data['teams']]
-dfTeam = pd.DataFrame(dfTeam, columns=['id', 'nickname'])
 
-wdataDf['TeamID'] = range(1, 1 + len(wdataDf))
-wdataDf = pd.merge(wdataDf, dfTeam[['id', 'nickname']], left_on='TeamID', right_on='id', how='left')
-wdataDf = wdataDf[['TeamID', 'nickname', 'opts', 'apts', 'epts']]
-wdataDf['MissedPoints'] = round(wdataDf['opts'] - wdataDf['apts'], 2)
-wdataDf['Efficiency'] = (round(wdataDf['apts'] / wdataDf['opts'], 3) * 100)
+if __name__ == '__main__':
+    swid = SWID
+    espn = ESPN_S2
 
-print(wdataDf)
+    slotcodes = {
+        0: 'QB', 1: 'QB',
+        2: 'RB', 3: 'RB',
+        4: 'WR', 5: 'WR',
+        6: 'TE', 7: 'TE',
+        16: 'D/ST',
+        17: 'K',
+        20: 'Bench',
+        21: 'IR',
+        23: 'Flex'
+    }
+
+    league_id = REDACTED_LEAGUE_ID
+    season = 2022
+    week = 6
+    posns = ['QB', 'RB', 'WR', 'Flex', 'TE', 'D/ST', 'K']
+    struc = [1, 2, 2, 1, 1, 1, 1]
+
+    d = get_matchups(league_id, season, week, swid=swid, espn=espn)
+    slates = get_slates(d)
+    point_data = compute_pts(slates, posns, struc)
+    team_df = get_team_info()
+    # not used, check diff b/w this and team_df
+    # tms = get_teamnames(league_id, season, week, swid=swid, espn=espn)
+
+    transform_data(point_data, team_df)

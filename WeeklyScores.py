@@ -115,9 +115,10 @@ def create_team_data(team_for_dict):
 ################################################################
 
 def merge_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df):
+    # merge the first 2 datasets
     combine_df = pd.merge(scores_for_df, teams_for_df, left_on='Team1_ID', right_on='Team_ID')
     combine_df = pd.merge(combine_df, teams_for_df, left_on='Team2_ID', right_on='Team_ID')
-
+    # drop and rename some fields
     combine_df = combine_df.drop(['Team_ID_x', 'Team_ID_y'], axis=1)
     combine_df.rename(columns={'Team_Name_x': 'team_name',
                                'Team_Name_y': 'opp_name',
@@ -127,24 +128,25 @@ def merge_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df):
                                'Team2_Points': 'opp_points',
                                'Matchup_Period': 'matchup_period'},
                       inplace=True)
-
+    # merge in the draft and rank details
     combine_df = pd.merge(combine_df, draft_for_df, left_on='team_id', right_on='team_id')
     combine_df = pd.merge(combine_df, rank_for_df, left_on='team_id', right_on='team_id')
-
+    # calculate league week avg, then merge into main df
     week_avg = combine_df.groupby(['matchup_period']).mean(numeric_only=True)['team_points']
     combine_df = pd.merge(combine_df, week_avg,
                           left_on='matchup_period',
                           right_on='matchup_period').rename(columns={'team_points_x': 'team_points',
                                                                      'team_points_y': 'week_avg'})
-
+    # calculate whether each matchup is a win and/or win against avg
     combine_df['win'] = np.where(combine_df['team_points'] > combine_df['opp_points'], 1, 0)
     combine_df['all_play_win'] = np.where(combine_df['team_points'] > combine_df['week_avg'], 1, 0)
+    # get diff btw draft and final rank
     combine_df['draft_rank_diff'] = combine_df['draft_pos'] - combine_df['rank']
 
     return combine_df
 
 
-def chart_draft_pos_rank(data, path=None, week=17):
+def chart_draft_pos_rank(data, week, path=None):
     sns.set_theme(style='darkgrid', palette=None)
     data = data.loc[data['matchup_period'] <= week]
     # compare draft pos to rank
@@ -159,7 +161,7 @@ def chart_draft_pos_rank(data, path=None, week=17):
     plt.show()
 
 
-def chart_draft_vs_final(data, path=None, week=17):
+def chart_draft_vs_final(data, week, path=None):
     sns.set_theme(style='darkgrid', palette=None)
     data = data.loc[data['matchup_period'] <= week]
     # visualize where each player moved through the year from draft to final rank
@@ -180,7 +182,7 @@ def chart_draft_vs_final(data, path=None, week=17):
     plt.show()
 
 
-def chart_week_avg(data, path=None, week=17):
+def chart_week_avg(data, week, path=None):
     sns.set_theme(style='darkgrid', palette=None)
     data = data.loc[data['matchup_period'] <= week]
     # scores week by week
@@ -194,7 +196,7 @@ def chart_week_avg(data, path=None, week=17):
     plt.show()
 
 
-def chart_all_play(data, path=None, week=17):
+def chart_all_play(data, week, path=None):
     sns.set_theme(style='darkgrid', palette=None)
     data = data.loc[data['matchup_period'] <= week]
     # all play win count
@@ -210,7 +212,7 @@ def chart_all_play(data, path=None, week=17):
     plt.show()
 
 
-def chart_team_median(data, path=None, week=17):
+def chart_team_median(data, week, path=None):
     sns.set_theme(style='darkgrid', palette=None)
     data = data.loc[data['matchup_period'] <= week]
     # create boxplot
@@ -234,7 +236,7 @@ def chart_team_median(data, path=None, week=17):
     plt.show()
 
 
-def chart_team_opp_density(data, path=None, week=17):
+def chart_team_opp_density(data, week, path=None):
     sns.set_theme(style='darkgrid', palette=None)
     data = data.loc[data['matchup_period'] <= week]
     # team vs opponents
@@ -247,6 +249,9 @@ def chart_team_opp_density(data, path=None, week=17):
         plt.savefig(path, bbox_inches='tight')
     plt.show()
 
+
+# TODO: get player ytd average score
+# TODO: get player ytd power ranking
 
 if __name__ == '__main__':
     year = 2022
@@ -279,17 +284,16 @@ if __name__ == '__main__':
     draft_pos, rank_df = get_draftpos_rank(scoreboard_settings_url)
     score_df = create_matchup_data(schedule_data)
     team_df = create_team_data(teams)
-
     df = merge_data(score_df, team_df, draft_pos, rank_df)
     # df.to_excel('/outputs/score_data.xlsx')
-    # print(df.head().to_string())
+    print(df.head().to_string())
     # print(df.info())
     # print(df.corr(numeric_only=True).to_string())
 
     week_max = 14  # set a max week (e.g. use 14 to only see regular season)
-    chart_draft_pos_rank(df, './outputs/1pos to rank.png', week_max)
-    chart_draft_vs_final(df, './outputs/2diff draft to final.png', week_max)
-    chart_week_avg(df, './outputs/3weekly_avg_scores.png', week_max)
-    chart_all_play(df, './outputs/4wins_against_week_avg.png', week_max)
-    chart_team_median(df, './outputs/5median_scores.png', week_max)
-    chart_team_opp_density(df, './outputs/6score_against_opp_density.png', week_max)
+    # chart_draft_pos_rank(df, week_max, './outputs/1pos to rank.png')
+    # chart_draft_vs_final(df, week_max, './outputs/2diff draft to final.png')
+    # chart_week_avg(df, week_max, './outputs/3weekly_avg_scores.png')
+    # chart_all_play(df, week_max, './outputs/4wins_against_week_avg.png')
+    # chart_team_median(df, week_max, './outputs/5median_scores.png')
+    # chart_team_opp_density(df, week_max, './outputs/6score_against_opp_density.png')
