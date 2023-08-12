@@ -144,12 +144,9 @@ def merge_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df):
     return combine_df
 
 
-def chart_scores(data, data_year):
+def chart_draft_pos_rank(data, path=None, week=17):
     sns.set_theme(style='darkgrid', palette=None)
-    ''' Filter data to only regular season
-    Remove below to get all weeks'''
-    data = data.loc[data['matchup_period'] < 15]
-
+    data = data.loc[data['matchup_period'] <= week]
     # compare draft pos to rank
     pos_rank = sns.regplot(data=data,
                            x='draft_pos',
@@ -157,9 +154,14 @@ def chart_scores(data, data_year):
                            robust=True)
     pos_rank.invert_yaxis()
     plt.tight_layout()
-    plt.savefig('./outputs/1pos to rank.png', bbox_inches='tight')
+    if path:
+        plt.savefig(path, bbox_inches='tight')
     plt.show()
 
+
+def chart_draft_vs_final(data, path=None, week=17):
+    sns.set_theme(style='darkgrid', palette=None)
+    data = data.loc[data['matchup_period'] <= week]
     # visualize where each player moved through the year from draft to final rank
     diff_data = data.groupby(by=['team_name',
                                  'draft_pos'])['draft_rank_diff'].min().reset_index().sort_values(by=['draft_pos'])
@@ -173,30 +175,44 @@ def chart_scores(data, data_year):
                 y='team_name',
                 palette=color_map(norm(diff_data['draft_rank_diff'])))
     plt.tight_layout()
-    plt.savefig('./outputs/2diff draft to final.png', bbox_inches='tight')
+    if path:
+        plt.savefig(path, bbox_inches='tight')
     plt.show()
 
+
+def chart_week_avg(data, path=None, week=17):
+    sns.set_theme(style='darkgrid', palette=None)
+    data = data.loc[data['matchup_period'] <= week]
     # scores week by week
     sns.regplot(data=data,
                 x='matchup_period',
                 y='week_avg').set(title=f'Weekly Avg Score for weeks '
-                                        f'{min(data["matchup_period"])}-{max(data["matchup_period"])} {data_year}')
+                                        f'{min(data["matchup_period"])}-{max(data["matchup_period"])}')
     plt.tight_layout()
-    plt.savefig('./outputs/3weekly_avg_scores.png', bbox_inches='tight')
+    if path:
+        plt.savefig(path, bbox_inches='tight')
     plt.show()
 
+
+def chart_all_play(data, path=None, week=17):
+    sns.set_theme(style='darkgrid', palette=None)
+    data = data.loc[data['matchup_period'] <= week]
     # all play win count
     all_play = data.groupby(data['team_name'])['all_play_win'].sum().sort_values(ascending=False).reset_index()
     sns.barplot(data=all_play,
                 y='team_name',
                 x='all_play_win',
                 palette='crest').set(title=f'Wins against Weekly Avg for weeks '
-                                           f'{min(data["matchup_period"])}-{max(data["matchup_period"])} '
-                                           f'{data_year}')
+                                           f'{min(data["matchup_period"])}-{max(data["matchup_period"])}')
     plt.tight_layout()
-    plt.savefig('./outputs/4wins_against_week_avg.png')
+    if path:
+        plt.savefig(path)
     plt.show()
 
+
+def chart_team_median(data, path=None, week=17):
+    sns.set_theme(style='darkgrid', palette=None)
+    data = data.loc[data['matchup_period'] <= week]
     # create boxplot
     box_chart_order = data.groupby(
         by=['team_name'])['team_points'].median().sort_values(ascending=False).index.to_list()
@@ -205,24 +221,32 @@ def chart_scores(data, data_year):
                 y='team_points',
                 order=box_chart_order  # set descending based on median of total score
                 ).set(title=f'Median scores for weeks '
-                            f'{min(data["matchup_period"])}-{max(data["matchup_period"])} {data_year}')  # set title
+                            f'{min(data["matchup_period"])}-{max(data["matchup_period"])}')  # set title
     plt.xticks(rotation=90)
+    label_y = 50  # Adjust this value to position the label
+    for team_name in box_chart_order:
+        rank = data[data['team_name'] == team_name]['rank'].values[0]
+        plt.text(box_chart_order.index(team_name), label_y,
+                 rank, ha='center', va='bottom')
     plt.tight_layout()
-    plt.savefig('./outputs/5median_scores.png', bbox_inches='tight')
+    if path:
+        plt.savefig(path, bbox_inches='tight')
     plt.show()
 
+
+def chart_team_opp_density(data, path=None, week=17):
+    sns.set_theme(style='darkgrid', palette=None)
+    data = data.loc[data['matchup_period'] <= week]
     # team vs opponents
     grid = sns.FacetGrid(data, col='team_name', col_wrap=4)
     grid.map_dataframe(sns.kdeplot, y='opp_points', x='team_points', fill=True, cmap='magma')
     grid.set_axis_labels(y_var='Opponent Points', x_var='Team Points')
     grid.set_titles(col_template='{col_name} Point Density')
     plt.tight_layout()
-    plt.savefig('./outputs/6score_against_opp_density.png', bbox_inches='tight')
+    if path:
+        plt.savefig(path, bbox_inches='tight')
     plt.show()
 
-
-# TODO: highest win-loss margin
-# TODO: number of lucky wins or unlucky loses (week score vs week avg)
 
 if __name__ == '__main__':
     year = 2022
@@ -231,10 +255,9 @@ if __name__ == '__main__':
                    f'leagues/{league_id}?view=mBoxscore'
     matchup_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
                   f'leagues/{league_id}?view=mMatchup&view=mMatchupScore'
+    # use to get rankCalculatedFinal
     scoreboard_settings_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
-                              f'leagues/{league_id}?view=mMatchup&view=mScoreboard&view=mSettings'  # use to get rankCalculatedFinal
-    settings_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
-                   f'leagues/{league_id}?view=mMatchup&view=mSettings'  # use to get pickOrder
+                              f'leagues/{league_id}?view=mMatchup&view=mScoreboard&view=mSettings'
 
     weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
     posns = ['QB', 'RB', 'WR', 'Flex', 'TE', 'D/ST', 'K']
@@ -251,15 +274,22 @@ if __name__ == '__main__':
         23: 'Flex'
     }
 
+    # get data and create df
     schedule_data, teams = fetch_boxscore_data(boxscore_url)
     draft_pos, rank_df = get_draftpos_rank(scoreboard_settings_url)
     score_df = create_matchup_data(schedule_data)
     team_df = create_team_data(teams)
+
     df = merge_data(score_df, team_df, draft_pos, rank_df)
+    # df.to_excel('/outputs/score_data.xlsx')
     # print(df.head().to_string())
     # print(df.info())
     # print(df.corr(numeric_only=True).to_string())
 
-    chart_scores(df, year)
-
-    # df.to_excel('/outputs/score_data.xlsx')
+    week_max = 14  # set a max week (e.g. use 14 to only see regular season)
+    chart_draft_pos_rank(df, './outputs/1pos to rank.png', week_max)
+    chart_draft_vs_final(df, './outputs/2diff draft to final.png', week_max)
+    chart_week_avg(df, './outputs/3weekly_avg_scores.png', week_max)
+    chart_all_play(df, './outputs/4wins_against_week_avg.png', week_max)
+    chart_team_median(df, './outputs/5median_scores.png', week_max)
+    chart_team_opp_density(df, './outputs/6score_against_opp_density.png', week_max)
