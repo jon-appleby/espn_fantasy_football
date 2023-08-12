@@ -119,8 +119,9 @@ def merge_data(scores_for_df, teams_for_df):
 
 def chart_scores(data, data_year):
     sns.set_theme(style='darkgrid', palette=None)
+    data = data.loc[data['matchup_period'] < 15]
 
-    # # create boxplot
+    # create boxplot
     box_chart_order = data.groupby(
         by=['team_name'])['team_points'].median().sort_values(ascending=False).index.to_list()
     sns.boxplot(data=data,
@@ -128,14 +129,19 @@ def chart_scores(data, data_year):
                 y='team_points',
                 order=box_chart_order  # set descending based on median of total score
                 ).set(title=f'Median scores for weeks '
-                            f'{min(df["matchup_period"])}-{max(df["matchup_period"])} {data_year}')  # set title
+                            f'{min(data["matchup_period"])}-{max(data["matchup_period"])} {data_year}')  # set title
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.savefig('./outputs/median_scores.png', bbox_inches='tight')
     plt.show()
 
     # scores week by week
     sns.regplot(data=data,
                 x='matchup_period',
                 y='week_avg').set(title=f'Weekly Avg Score for weeks '
-                                        f'{min(df["matchup_period"])}-{max(df["matchup_period"])} {data_year}')
+                                        f'{min(data["matchup_period"])}-{max(data["matchup_period"])} {data_year}')
+    plt.tight_layout()
+    plt.savefig('./outputs/weekly_avg_scores.png', bbox_inches='tight')
     plt.show()
 
     # all play win count
@@ -143,9 +149,11 @@ def chart_scores(data, data_year):
     sns.barplot(data=all_play,
                 y='team_name',
                 x='all_play_win',
-                palette='Spectral').set(title=f'Wins against Weekly Avg for weeks '
-                                                           f'{min(df["matchup_period"])}-{max(df["matchup_period"])} '
-                                                           f'{data_year}')
+                palette='crest').set(title=f'Wins against Weekly Avg for weeks '
+                                           f'{min(data["matchup_period"])}-{max(data["matchup_period"])} '
+                                           f'{data_year}')
+    plt.tight_layout()
+    plt.savefig('./outputs/wins_against_week_avg.png')
     plt.show()
 
     # team vs opponents
@@ -153,6 +161,8 @@ def chart_scores(data, data_year):
     grid.map_dataframe(sns.kdeplot, y='opp_points', x='team_points', fill=True, cmap='magma')
     grid.set_axis_labels(y_var='Opponent Points', x_var='Team Points')
     grid.set_titles(col_template='{col_name} Point Density')
+    plt.tight_layout()
+    plt.savefig('./outputs/score_against_opp_density.png', bbox_inches='tight')
     plt.show()
 
 
@@ -190,4 +200,4 @@ if __name__ == '__main__':
 
     chart_scores(df, year)
 
-    # df.to_excel('score_data.xlsx')
+    # df.to_excel('/outputs/score_data.xlsx')
