@@ -172,7 +172,7 @@ def transform_data(data, team):
     return point_df
 
 
-def chart_oae_pts(data):
+def chart_oae_pts(data, curr_week=1):
     sns.set_theme(style='darkgrid')
 
     # sort for chart
@@ -182,23 +182,27 @@ def chart_oae_pts(data):
     optimal_pt_colr = 'gray'
     # Set up the figure and axes
     plt.figure(figsize=(10, 8))
-    ax = sns.stripplot(data=data, x='actual_pts', y='team_name', marker='D', size=5, color=actual_pt_color)
+    ax = sns.stripplot(data=data, x='actual_pts', y='team_name', marker='o', size=10, color=actual_pt_color)
 
-    # Add optimal_pts as end points of the line
-    ax.hlines(y=data['team_name'], xmin=data['actual_pts'], xmax=data['optimal_pts'], color=optimal_pt_colr)
+    # Add line starting at a_pts and end at o_pts
+    ax.hlines(y=data['team_name'], xmin=data['actual_pts'], xmax=data['optimal_pts'],
+              color=optimal_pt_colr, linewidth=4, linestyles='-')
 
     # Add dots at the end of the lines (optimal_pts and actual_pts)
-    plt.scatter(data['optimal_pts'], range(len(data)), color=optimal_pt_colr, marker='o', s=40, label='optimal_pts')
-    plt.scatter(data['actual_pts'], range(len(data)), color=actual_pt_color, marker='o', s=40, label='actual_pts')
+    plt.scatter(data['optimal_pts'], range(len(data)), color=optimal_pt_colr, marker='|', s=120, label='optimal_pts')
+    plt.scatter(data['actual_pts'], range(len(data)), color=actual_pt_color, marker='o', s=120, label='actual_pts')
 
     # Set labels and title
-    plt.xlabel('Points')
-    plt.ylabel('Team')
-    plt.title('Actual vs Optimal Points')
+    plt.xlabel('Points', size=9)
+    plt.ylabel('Team', size=9)
+    plt.xticks(size=9, color='#737373')
+    plt.yticks(size=9, color='#737373')
+    plt.title(f'Actual vs Optimal Points - Week {curr_week}', size=10)
 
     # Add legend
     plt.legend()
-    # plt.show()
+
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -231,4 +235,4 @@ if __name__ == '__main__':
     print_output = transform_data(point_data, team_df)
     print(print_output.to_string())
 
-    chart_oae_pts(transform_data(point_data, team_df))
+    chart_oae_pts(transform_data(point_data, team_df), week)

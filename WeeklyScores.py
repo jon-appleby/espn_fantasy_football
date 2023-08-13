@@ -121,13 +121,30 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
     combine_df['draft_rank_diff'] = combine_df['draft_pos'] - combine_df['rank']
 
     # determine current average score by player
-    copy_df = combine_df
-    copy_df = copy_df.drop(['team_name', 'opp_name'], axis=1)
-    copy_df = copy_df.expanding(min_periods=1).mean()
-    # print(copy_df.to_string())
+    team_avg = combine_df.groupby(by='team_id')['team_points'].mean().reset_index()
+    combine_df = pd.merge(combine_df, team_avg, left_on='team_id', right_on='team_id') \
+        .rename(columns={'team_points_x': 'team_points', 'team_points_y': 'team_avg_full'})
+
+    # get highest/lowest points and win % for each team
+    high_points = combine_df.groupby(by='team_id')['team_points'].max().reset_index().rename(
+        columns={'team_points': 'team_hi_pts_full'})
+    low_points = combine_df.groupby(by='team_id')['team_points'].min().reset_index().rename(
+        columns={'team_points': 'team_lo_pts_full'})
+    win_pct = combine_df.groupby(by='team_id')['win'].mean().reset_index().rename(
+        columns={'win': 'win_pct_full'})
+    combine_df = combine_df.merge(high_points, on='team_id').merge(low_points, on='team_id').merge(win_pct,
+                                                                                                   on='team_id')
 
     # determine power ranking by player for each week
-    # ((avg score * 6) + ((highest score ytd + lowest score ytd) x 2) + ((win % x 200) x2)) / 10
+    # ((avg score * 6) + ((highest score ytd + lowest score ytd) x 2) + ((win % x 200) x2) / 10
+    combine_df['power_rank_full'] = (
+                                            (
+                                                    (combine_df['team_avg_full'] * 6) + combine_df['team_hi_pts_full']
+                                            ) +
+                                            (
+                                                    (combine_df['win_pct_full'] * 200) * 2
+                                            )
+                                    ) / 10
 
     return combine_df
 
@@ -236,6 +253,87 @@ def chart_team_opp_density(data, week, path=None):
     plt.show()
 
 
+def chart_powerrank_vs_rank(data, curr_week, path=None):
+    sns.set_theme(style='darkgrid', palette=None)
+    data = data.loc[data['matchup_period'] <= curr_week]
+
+    """
+    calculate power rank using weeks up until current week
+    same calculation used in transform_data function, but re-calculating below after filtering on week
+    this allows for seeing intra-year or historical power ranking
+    """
+    # drop columns already created in transform_data function
+    data = data.drop(columns=['team_hi_pts_full', 'team_lo_pts_full', 'win_pct_full'])
+
+    # get highest/lowest points and win % for each team
+    high_points = data.groupby(by='team_id')['team_points'].max().reset_index().rename(
+        columns={'team_points': 'team_hi_pts_full'})
+    low_points = data.groupby(by='team_id')['team_points'].min().reset_index().rename(
+        columns={'team_points': 'team_lo_pts_full'})
+    win_pct = data.groupby(by='team_id')['win'].mean().reset_index().rename(
+        columns={'win': 'win_pct_full'})
+    data = data.merge(high_points, on='team_id').merge(low_points, on='team_id').merge(win_pct, on='team_id')
+
+    # determine power ranking by player for each week
+    data['power_rank_full'] = (
+                                      (
+                                              (data['team_avg_full'] * 6) + data['team_hi_pts_full']
+                                      ) +
+                                      (
+                                              (data['win_pct_full'] * 200) * 2
+                                      )
+                              ) / 10
+
+    # filter data again to only current week to avoid extra unnecessary data
+    # rank and power rank are already calculated for the full data up until curr_week
+    data = data.loc[data['matchup_period'] == curr_week]
+
+    # add power ranking to 1-12 to compare against actual rank
+    data['power_rank_converted'] = data['power_rank_full'].rank(ascending=False)
+
+    # sort data for chart
+    data = data.sort_values(by='power_rank_converted')
+
+    # Create chart
+    rank_color = '#3da339'  # green
+    rank_marker = 'o'
+    power_rank_color = '#9c9c9c'  # grey
+    ax = sns.stripplot(data=data, x='team_name', y='rank', marker=rank_marker, size=10, color=rank_color)
+
+    # Add line starting at o_pts and end at a_pts (flipped)
+    ax.vlines(x=data['team_name'], ymin=data['power_rank_converted'], ymax=data['rank'],
+              color=power_rank_color, linewidth=3, linestyles='-')
+
+    # Add dots at the end of the lines (power_rank and rank)
+    plt.scatter(range(len(data)), data['power_rank_converted'],
+                color=power_rank_color, marker='_', s=120, label='Power Rank')
+    plt.scatter(range(len(data)), data['rank'],
+                color=rank_color, marker=rank_marker, s=120, label='Actual Rank (Final)')
+
+    # Set labels and title
+    plt.xlabel('Team', size=9)  # Adjust x-axis label
+    plt.ylabel('Ranking', size=9)  # Adjust y-axis label
+    plt.xticks(range(len(data)), data['team_name'], rotation=45, ha='right', size=9,
+               color='#737373')  # Adjust x-axis ticks
+    plt.yticks(size=9, color='#737373')
+    plt.title(f'Final Rank vs Power Rank Points - Week {curr_week}', size=10)
+
+    ax.invert_yaxis()
+
+    plt.text(0, 12, 'Power Ranking: based on an "expected" score for each team\n'
+                    'by weighting the average score, extreme high/lows, and win %\n\n'
+                    'Final Ranking: the final rank of each team per ESPN', fontdict={'fontsize': 6,
+                                                                                     'ha': 'left',
+                                                                                     'va': 'bottom',
+                                                                                     'color': 'grey'})
+
+    plt.legend(fontsize=8)
+    plt.tight_layout()
+    if path:
+        plt.savefig(path, bbox_inches='tight')
+    plt.show()
+
+
 def curr_matchup_chart(data, curr_week, path=None):
     sns.set_theme(style='darkgrid', palette=None)
     data = data.loc[data['matchup_period'] == curr_week]
@@ -257,14 +355,14 @@ def curr_matchup_chart(data, curr_week, path=None):
     plt.title(f'Matchup Matrix - Week {curr_week}', fontsize=10)
 
     # update axis labels
-    plt.xlabel('Team Score', size=9, color='#737373')
-    plt.ylabel('Opponent Score', size=9, color='#737373')
+    plt.xlabel('Team Score Over/Under Average', size=9, color='#737373')
+    plt.ylabel('Opponent Score Over/Under Average', size=9, color='#737373')
     plt.xticks(size=9, color='#737373')
     plt.yticks(size=9, color='#737373')
 
     # set axis limits
-    plt.xlim(-max(x_pt)-5, max(x_pt)+5)
-    plt.ylim(-max(y_pt)-5, max(y_pt)+5)
+    plt.xlim(-max(x_pt) - 5, max(x_pt) + 5)
+    plt.ylim(-max(y_pt) - 5, max(y_pt) + 5)
 
     # add quadrant lines
     plt.axhline(y=0, color='#737373')
@@ -289,14 +387,15 @@ def curr_matchup_chart(data, curr_week, path=None):
     plt.show()
 
 
-def print_and_save_charts(max_week=14, week_current=1):
-    chart_draft_pos_rank(df, max_week, './outputs/1pos to rank.png')
-    chart_draft_vs_final(df, max_week, './outputs/2diff draft to final.png')
-    chart_week_avg(df, max_week, './outputs/3weekly_avg_scores.png')
-    chart_all_play(df, max_week, './outputs/4wins_against_week_avg.png')
-    chart_team_median(df, max_week, './outputs/5median_scores.png')
-    chart_team_opp_density(df, max_week, './outputs/6score_against_opp_density.png')
-    curr_matchup_chart(df, week_current, f'./outputs/week{current_week}_matchup_chart.png')
+def print_and_save_charts(data, max_week=14, week_current=1):
+    chart_draft_pos_rank(data, max_week, './outputs/1pos to rank.png')
+    chart_draft_vs_final(data, max_week, './outputs/2diff draft to final.png')
+    chart_week_avg(data, max_week, './outputs/3weekly_avg_scores.png')
+    chart_all_play(data, max_week, './outputs/4wins_against_week_avg.png')
+    chart_team_median(data, max_week, './outputs/5median_scores.png')
+    chart_team_opp_density(data, max_week, './outputs/6score_against_opp_density.png')
+    chart_powerrank_vs_rank(data, max_week, f'./outputs/week{current_week}_power_ranking.png')
+    curr_matchup_chart(data, week_current, f'./outputs/week{current_week}_matchup_chart.png')
 
 
 # TODO: get player ytd average score
@@ -310,13 +409,12 @@ if __name__ == '__main__':
     # use to get "rankCalculatedFinal"
     scoreboard_settings_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
                               f'leagues/{league_id}?view=mMatchup&view=mScoreboard&view=mSettings'
-
     # get data and create df
     schedule_data, teams = fetch_boxscore_data(boxscore_url)
     draft_pos, rank_df = get_draftpos_rank(scoreboard_settings_url)
     score_df = create_matchup_data(schedule_data)
     team_df = create_team_data(teams)
-    df = merge_transform_data(score_df, team_df, draft_pos, rank_df)
+    full_data = merge_transform_data(score_df, team_df, draft_pos, rank_df)
 
     ##################
     # run the charts #
@@ -324,14 +422,14 @@ if __name__ == '__main__':
     # set a max week (e.g. use 14 to only see regular season)
     week_max = 14
     # set current week to use on charts that are specific to a single week
-    current_week = 2
-    # print_and_save_charts(week_max, current_week)
+    current_week = 8
+    # print_and_save_charts(full_data, week_max, current_week)
 
     ######################
     # prints for testing #
     ######################
-    # df.to_excel('/outputs/score_data.xlsx')
-    # print(df.head().to_string())
-    curr_matchup_chart(df, 13)  # f'./outputs/week{current_week}_matchup_chart.png'
-    # print(df.info())
-    # print(df.corr(numeric_only=True).to_string())
+    # full_data.to_excel('./outputs/score_data.xlsx', index=False)
+    # print(full_data.sample(10).to_string())
+    chart_powerrank_vs_rank(full_data, current_week)
+    # print(full_data.info())
+    # print(full_data.corr(numeric_only=True).to_string())
