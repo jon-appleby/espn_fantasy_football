@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import matplotlib.colors as mcolors
+from adjustText import adjust_text
 
 
 def fetch_boxscore_data(url):
@@ -78,46 +79,14 @@ def create_team_data(team_for_dict):
     return pd.DataFrame(team_list)
 
 
-###############################################################
-# REMOVED temporarily - replace with ActualvsOptimalScores.py #
-###############################################################
-# def get_score_data(url, week_input):
-#     week_data = []
-#     for week in week_input:
-#         req = requests.get(url,
-#                            params={'scoringPeriodId': week, 'matchupPeriodId': week},
-#                            cookies={"SWID": SWID, "espn_s2": ESPN_S2})
-#         data = req.json()
-#         data['week'] = week
-#         week_data.append(data)
-#     return week_data
-#
-#
-#
-# # See "ActualvsOptimalScores" for reference
-# # Difference is get_score_data contains an additional key for week
-# def get_slates(slate_data):
-#     result_list = []
-#     for data in slate_data:
-#         week = data['week']
-#         for team in data['teams']:
-#             team_id = team['id']
-#
-#             result_dict = {'Team_ID': team_id,
-#                            'Week': week}
-#
-#             result_list.append(result_dict)
-#
-#     return result_list
-#
-# slate_data = get_score_data(matchup_url, weeks)
-# slates = get_slates(slate_data)
-################################################################
-
-def merge_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df):
+def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df):
+    """
+    merge main data inputs, then create additional fields used later for plotting
+    """
     # merge the first 2 datasets
     combine_df = pd.merge(scores_for_df, teams_for_df, left_on='Team1_ID', right_on='Team_ID')
     combine_df = pd.merge(combine_df, teams_for_df, left_on='Team2_ID', right_on='Team_ID')
+
     # drop and rename some fields
     combine_df = combine_df.drop(['Team_ID_x', 'Team_ID_y'], axis=1)
     combine_df.rename(columns={'Team_Name_x': 'team_name',
@@ -128,20 +97,37 @@ def merge_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df):
                                'Team2_Points': 'opp_points',
                                'Matchup_Period': 'matchup_period'},
                       inplace=True)
+
     # merge in the draft and rank details
     combine_df = pd.merge(combine_df, draft_for_df, left_on='team_id', right_on='team_id')
     combine_df = pd.merge(combine_df, rank_for_df, left_on='team_id', right_on='team_id')
+
     # calculate league week avg, then merge into main df
     week_avg = combine_df.groupby(['matchup_period']).mean(numeric_only=True)['team_points']
     combine_df = pd.merge(combine_df, week_avg,
                           left_on='matchup_period',
                           right_on='matchup_period').rename(columns={'team_points_x': 'team_points',
                                                                      'team_points_y': 'week_avg'})
+
     # calculate whether each matchup is a win and/or win against avg
     combine_df['win'] = np.where(combine_df['team_points'] > combine_df['opp_points'], 1, 0)
     combine_df['all_play_win'] = np.where(combine_df['team_points'] > combine_df['week_avg'], 1, 0)
-    # get diff btw draft and final rank
+
+    # calculate pts over/under week avg
+    combine_df['team_pts_v_avg'] = combine_df['team_points'] - combine_df['week_avg']
+    combine_df['opp_pts_v_avg'] = combine_df['opp_points'] - combine_df['week_avg']
+
+    # get diff b/w draft and final rank
     combine_df['draft_rank_diff'] = combine_df['draft_pos'] - combine_df['rank']
+
+    # determine current average score by player
+    copy_df = combine_df
+    copy_df = copy_df.drop(['team_name', 'opp_name'], axis=1)
+    copy_df = copy_df.expanding(min_periods=1).mean()
+    # print(copy_df.to_string())
+
+    # determine power ranking by player for each week
+    # ((avg score * 6) + ((highest score ytd + lowest score ytd) x 2) + ((win % x 200) x2)) / 10
 
     return combine_df
 
@@ -250,15 +236,67 @@ def chart_team_opp_density(data, week, path=None):
     plt.show()
 
 
-def print_and_save_charts():
-    # set a max week (e.g. use 14 to only see regular season)
-    week_max = 14
-    chart_draft_pos_rank(df, week_max, './outputs/1pos to rank.png')
-    chart_draft_vs_final(df, week_max, './outputs/2diff draft to final.png')
-    chart_week_avg(df, week_max, './outputs/3weekly_avg_scores.png')
-    chart_all_play(df, week_max, './outputs/4wins_against_week_avg.png')
-    chart_team_median(df, week_max, './outputs/5median_scores.png')
-    chart_team_opp_density(df, week_max, './outputs/6score_against_opp_density.png')
+def curr_matchup_chart(data, curr_week, path=None):
+    sns.set_theme(style='darkgrid', palette=None)
+    data = data.loc[data['matchup_period'] == curr_week]
+    print(data.to_string())
+
+    x_pt = data['team_pts_v_avg']
+    y_pt = data['opp_pts_v_avg']
+    label = data['team_name']
+
+    sns.scatterplot(data=data, x=x_pt, y=y_pt,
+                    hue='win', hue_order=[1, 0],
+                    style='win', style_order=[1, 0],
+                    palette={1: '#32a852', 0: '#a32123'})
+
+    # fix legend labels
+    plt.legend(labels=['loss', 'win'])
+
+    # add title
+    plt.title(f'Matchup Matrix - Week {curr_week}', fontsize=10)
+
+    # update axis labels
+    plt.xlabel('Team Score', size=9, color='#737373')
+    plt.ylabel('Opponent Score', size=9, color='#737373')
+    plt.xticks(size=9, color='#737373')
+    plt.yticks(size=9, color='#737373')
+
+    # set axis limits
+    plt.xlim(-max(x_pt)-5, max(x_pt)+5)
+    plt.ylim(-max(y_pt)-5, max(y_pt)+5)
+
+    # add quadrant lines
+    plt.axhline(y=0, color='#737373')
+    plt.axvline(x=0, color='#737373')
+
+    # add text to quadrants
+    quad_label_dict = {'fontsize': 8,
+                       'ha': 'center',
+                       'va': 'center',
+                       'color': '#737373'}
+    plt.text(x=-13, y=-13, s='Lucky Win /\nMissed Opportunity', fontdict=quad_label_dict)
+    plt.text(x=13, y=13, s='Unlucky Loss /\nTough Win', fontdict=quad_label_dict)
+
+    # add team name as labels to each point
+    text = [plt.text(x, y, f'{name}', fontdict={'size': 9, 'color': '#4d5478'})
+            for (x, y, name) in zip(x_pt, y_pt, label)]
+    adjust_text(text, arrowprops={'arrowstyle': '-', 'color': '#9badc9', 'lw': 0.5})
+
+    plt.tight_layout()
+    if path:
+        plt.savefig(path, bbox_inches='tight')
+    plt.show()
+
+
+def print_and_save_charts(max_week=14, week_current=1):
+    chart_draft_pos_rank(df, max_week, './outputs/1pos to rank.png')
+    chart_draft_vs_final(df, max_week, './outputs/2diff draft to final.png')
+    chart_week_avg(df, max_week, './outputs/3weekly_avg_scores.png')
+    chart_all_play(df, max_week, './outputs/4wins_against_week_avg.png')
+    chart_team_median(df, max_week, './outputs/5median_scores.png')
+    chart_team_opp_density(df, max_week, './outputs/6score_against_opp_density.png')
+    curr_matchup_chart(df, week_current, f'./outputs/week{current_week}_matchup_chart.png')
 
 
 # TODO: get player ytd average score
@@ -269,41 +307,31 @@ if __name__ == '__main__':
     league_id = LEAGUE_ID
     boxscore_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
                    f'leagues/{league_id}?view=mBoxscore'
-    matchup_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
-                  f'leagues/{league_id}?view=mMatchup&view=mMatchupScore'
     # use to get "rankCalculatedFinal"
     scoreboard_settings_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
                               f'leagues/{league_id}?view=mMatchup&view=mScoreboard&view=mSettings'
-
-    weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-    posns = ['QB', 'RB', 'WR', 'Flex', 'TE', 'D/ST', 'K']
-    struc = [1, 2, 2, 1, 1, 1, 1]
-    slotcodes = {
-        0: 'QB', 1: 'QB',
-        2: 'RB', 3: 'RB',
-        4: 'WR', 5: 'WR',
-        6: 'TE', 7: 'TE',
-        16: 'D/ST',
-        17: 'K',
-        20: 'Bench',
-        21: 'IR',
-        23: 'Flex'
-    }
 
     # get data and create df
     schedule_data, teams = fetch_boxscore_data(boxscore_url)
     draft_pos, rank_df = get_draftpos_rank(scoreboard_settings_url)
     score_df = create_matchup_data(schedule_data)
     team_df = create_team_data(teams)
-    df = merge_data(score_df, team_df, draft_pos, rank_df)
+    df = merge_transform_data(score_df, team_df, draft_pos, rank_df)
 
-    # run the charts
-    # print_and_save_charts()
+    ##################
+    # run the charts #
+    ##################
+    # set a max week (e.g. use 14 to only see regular season)
+    week_max = 14
+    # set current week to use on charts that are specific to a single week
+    current_week = 2
+    # print_and_save_charts(week_max, current_week)
 
-    # output and printing for testing
+    ######################
+    # prints for testing #
+    ######################
     # df.to_excel('/outputs/score_data.xlsx')
-    print(df.head().to_string())
+    # print(df.head().to_string())
+    curr_matchup_chart(df, 13)  # f'./outputs/week{current_week}_matchup_chart.png'
     # print(df.info())
     # print(df.corr(numeric_only=True).to_string())
-
-

@@ -4,8 +4,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-api_cache = {}
-
 
 def get_matchups(league_id, season, week, swid='', espn=''):
     '''
@@ -170,7 +168,6 @@ def transform_data(data, team):
                                         'TeamID': 'team_id'}).drop(columns='id')
     point_df['missed_pts'] = round(point_df['optimal_pts'] - point_df['actual_pts'], 2)
     point_df['efficiency'] = (round(point_df['actual_pts'] / point_df['optimal_pts'], 3) * 100)
-    point_df['espn_accuracy'] = (round(point_df['espn_proj'] / point_df['optimal_pts'], 3) * 100)
 
     return point_df
 
@@ -190,13 +187,9 @@ def chart_oae_pts(data):
     # Add optimal_pts as end points of the line
     ax.hlines(y=data['team_name'], xmin=data['actual_pts'], xmax=data['optimal_pts'], color=optimal_pt_colr)
 
-    # Add espn_proj as symbols on the line
-    ax.plot(data['espn_proj'], range(len(data)), 'r*', markersize=6)  # r* is a red star
-
     # Add dots at the end of the lines (optimal_pts and actual_pts)
     plt.scatter(data['optimal_pts'], range(len(data)), color=optimal_pt_colr, marker='o', s=40, label='optimal_pts')
     plt.scatter(data['actual_pts'], range(len(data)), color=actual_pt_color, marker='o', s=40, label='actual_pts')
-    plt.scatter(data['espn_proj'], range(len(data)), color='red', marker='*', s=35, label='espn_proj')
 
     # Set labels and title
     plt.xlabel('Points')
@@ -205,8 +198,7 @@ def chart_oae_pts(data):
 
     # Add legend
     plt.legend()
-
-    plt.show()
+    # plt.show()
 
 
 if __name__ == '__main__':
@@ -240,5 +232,3 @@ if __name__ == '__main__':
     print(print_output.to_string())
 
     chart_oae_pts(transform_data(point_data, team_df))
-
-
