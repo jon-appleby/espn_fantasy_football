@@ -6,7 +6,7 @@ import seaborn as sns
 import numpy as np
 import matplotlib.colors as mcolors
 from adjustText import adjust_text
-
+from scipy.interpolate import make_interp_spline
 
 def fetch_boxscore_data(url):
     req = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2})
@@ -132,8 +132,9 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
         columns={'team_points': 'team_lo_pts_full'})
     win_pct = combine_df.groupby(by='team_id')['win'].mean().reset_index().rename(
         columns={'win': 'win_pct_full'})
-    combine_df = combine_df.merge(high_points, on='team_id').merge(low_points, on='team_id').merge(win_pct,
-                                                                                                   on='team_id')
+    combine_df = combine_df.merge(high_points, on='team_id') \
+        .merge(low_points, on='team_id') \
+        .merge(win_pct, on='team_id')
 
     # determine power ranking by player for each week
     # ((avg score * 6) + ((highest score ytd + lowest score ytd) x 2) + ((win % x 200) x2) / 10
@@ -145,6 +146,34 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
                                                     (combine_df['win_pct_full'] * 200) * 2
                                             )
                                     ) / 10
+
+    ####################
+    # create ytd stats #
+    ####################
+    # sort dataframe to ensure we add up from the matchup periods before
+    combine_df = combine_df.sort_values(by='matchup_period')
+
+    # group the data by 'team_id' then calculate avg, hi, lo, and win pct
+    combine_df['team_avg_ytd'] = combine_df.groupby('team_id')['team_points'].cumsum() \
+                                 / combine_df.groupby('team_id').cumcount().add(1)
+    combine_df['team_hi_pts_ytd'] = combine_df.groupby('team_id')['team_points'].cummax()
+    combine_df['team_lo_pts_ytd'] = combine_df.groupby('team_id')['team_points'].cummin()
+    combine_df['win_pct_ytd'] = combine_df.groupby('team_id')['win'].cumsum() \
+                                / combine_df.groupby('team_id').cumcount().add(1)
+
+    # create power rankings by week
+    combine_df['power_rank_ytd'] = (
+                                           (
+                                                   (combine_df['team_avg_ytd'] * 6) + combine_df['team_hi_pts_ytd']
+                                           ) +
+                                           (
+                                                   (combine_df['win_pct_ytd'] * 200) * 2
+                                           )
+                                   ) / 10
+
+    combine_df['power_rank_ytd_asrank'] = combine_df.groupby('matchup_period')['power_rank_ytd'].rank(ascending=False)
+
+    combine_df = combine_df.sort_values(by='matchup_period')
 
     return combine_df
 
@@ -221,6 +250,7 @@ def chart_team_median(data, week, path=None):
     # create boxplot
     box_chart_order = data.groupby(
         by=['team_name'])['team_points'].median().sort_values(ascending=False).index.to_list()
+
     sns.boxplot(data=data,
                 x='team_name',
                 y='team_points',
@@ -253,46 +283,86 @@ def chart_team_opp_density(data, week, path=None):
     plt.show()
 
 
-def chart_powerrank_vs_rank(data, curr_week, path=None):
+def chart_power_rank_by_week(data, week, path=None):
     sns.set_theme(style='darkgrid', palette=None)
-    data = data.loc[data['matchup_period'] <= curr_week]
+
+    # Filter to only records in time period
+    data = data.loc[data['matchup_period'] <= week]
+
+    x_pt = data['matchup_period']
+    y_pt = data['power_rank_ytd_asrank']
+    label = data['team_name']
+    print(y_pt)
+
+    fig, ax = plt.subplots()
+
+    custom_palette = ['#74aecc', '#0f78bf', '#b2df8a', '#33a02c',
+                      '#fb9a99', '#e31a1c', '#bd8844', '#ff7f00',
+                      '#be94d4', '#6a3d9a', '#c7c775', '#b15928']
+
+    # Plot the lineplot
+    plot = sns.lineplot(data=data, x=x_pt, y=y_pt,
+                        hue=label, palette=custom_palette,
+                        linewidth=3,
+                        markers=True, marker='o', markersize=7)
+
+    for line, name in zip(ax.lines, label.tolist()):
+        if len(line.get_ydata()) == 0:
+            continue
+
+        y = line.get_ydata()[-1]
+        x = line.get_xdata()[-1]
+
+        if not np.isfinite(y):
+            y = next(reversed(line.get_ydata()[~line.get_ydata().mask]), float("nan"))
+        if not np.isfinite(y) or not np.isfinite(x):
+            continue
+
+        text = ax.annotate(name,
+                           xy=(x, y),
+                           xytext=(5, -2),
+                           color=line.get_color(),
+                           xycoords=(ax.get_xaxis_transform(),
+                                     ax.get_yaxis_transform()),
+                           textcoords="offset points",
+                           fontsize=8)
+
+        text_width = (text.get_window_extent(
+            fig.canvas.get_renderer()).transformed(ax.transData.inverted()).width)
+        if np.isfinite(text_width):
+            ax.set_xlim(ax.get_xlim()[0], text.xy[0] + text_width * 1.05)
+
+    # Set labels and title
+    plt.xlabel('Week', size=9)
+    plt.ylabel('Power Rank', size=9)
+    plt.xticks(size=9, color='#737373')
+    plt.yticks(size=9, color='#737373')
+    plt.title(f'Final Rank vs Power Rank Points thru Week {week}', size=10)
+
+    plot.invert_yaxis()
+
+    plt.tight_layout()
+
+    # Remove the legend
+    plot.legend().set_visible(False)
+
+    if path:
+        plt.savefig(path, bbox_inches='tight')
+    plt.show()
+
+
+def curr_powerrank_vs_rank(data, curr_week, path=None):
+    sns.set_theme(style='darkgrid', palette=None)
+    data = data.loc[data['matchup_period'] == curr_week]
 
     """
     calculate power rank using weeks up until current week
     same calculation used in transform_data function, but re-calculating below after filtering on week
     this allows for seeing intra-year or historical power ranking
     """
-    # drop columns already created in transform_data function
-    data = data.drop(columns=['team_hi_pts_full', 'team_lo_pts_full', 'win_pct_full'])
-
-    # get highest/lowest points and win % for each team
-    high_points = data.groupby(by='team_id')['team_points'].max().reset_index().rename(
-        columns={'team_points': 'team_hi_pts_full'})
-    low_points = data.groupby(by='team_id')['team_points'].min().reset_index().rename(
-        columns={'team_points': 'team_lo_pts_full'})
-    win_pct = data.groupby(by='team_id')['win'].mean().reset_index().rename(
-        columns={'win': 'win_pct_full'})
-    data = data.merge(high_points, on='team_id').merge(low_points, on='team_id').merge(win_pct, on='team_id')
-
-    # determine power ranking by player for each week
-    data['power_rank_full'] = (
-                                      (
-                                              (data['team_avg_full'] * 6) + data['team_hi_pts_full']
-                                      ) +
-                                      (
-                                              (data['win_pct_full'] * 200) * 2
-                                      )
-                              ) / 10
-
-    # filter data again to only current week to avoid extra unnecessary data
-    # rank and power rank are already calculated for the full data up until curr_week
-    data = data.loc[data['matchup_period'] == curr_week]
-
-    # add power ranking to 1-12 to compare against actual rank
-    data['power_rank_converted'] = data['power_rank_full'].rank(ascending=False)
 
     # sort data for chart
-    data = data.sort_values(by='power_rank_converted')
+    data = data.sort_values(by='power_rank_ytd_asrank')
 
     # Create chart
     rank_color = '#3da339'  # green
@@ -301,11 +371,11 @@ def chart_powerrank_vs_rank(data, curr_week, path=None):
     ax = sns.stripplot(data=data, x='team_name', y='rank', marker=rank_marker, size=10, color=rank_color)
 
     # Add line starting at o_pts and end at a_pts (flipped)
-    ax.vlines(x=data['team_name'], ymin=data['power_rank_converted'], ymax=data['rank'],
+    ax.vlines(x=data['team_name'], ymin=data['power_rank_ytd_asrank'], ymax=data['rank'],
               color=power_rank_color, linewidth=3, linestyles='-')
 
     # Add dots at the end of the lines (power_rank and rank)
-    plt.scatter(range(len(data)), data['power_rank_converted'],
+    plt.scatter(range(len(data)), data['power_rank_ytd_asrank'],
                 color=power_rank_color, marker='_', s=120, label='Power Rank')
     plt.scatter(range(len(data)), data['rank'],
                 color=rank_color, marker=rank_marker, s=120, label='Actual Rank (Final)')
@@ -337,19 +407,24 @@ def chart_powerrank_vs_rank(data, curr_week, path=None):
 def curr_matchup_chart(data, curr_week, path=None):
     sns.set_theme(style='darkgrid', palette=None)
     data = data.loc[data['matchup_period'] == curr_week]
-    print(data.to_string())
 
     x_pt = data['team_pts_v_avg']
     y_pt = data['opp_pts_v_avg']
     label = data['team_name']
+    # Replace values in the 'win' column using .loc
+    data.loc[data['win'] == 1, 'win'] = 'win'
+    data.loc[data['win'] == 0, 'win'] = 'loss'
+    print(data.head().to_string())
 
     sns.scatterplot(data=data, x=x_pt, y=y_pt,
-                    hue='win', hue_order=[1, 0],
-                    style='win', style_order=[1, 0],
-                    palette={1: '#32a852', 0: '#a32123'})
+                    hue='win',
+                    hue_order=['win', 'loss'],
+                    style='win',
+                    style_order=['win', 'loss'],
+                    palette={'win': '#32a852', 'loss': '#a32123'})
 
     # fix legend labels
-    plt.legend(labels=['loss', 'win'])
+    plt.legend(title='Result')
 
     # add title
     plt.title(f'Matchup Matrix - Week {curr_week}', fontsize=10)
@@ -361,8 +436,12 @@ def curr_matchup_chart(data, curr_week, path=None):
     plt.yticks(size=9, color='#737373')
 
     # set axis limits
-    plt.xlim(-max(x_pt) - 5, max(x_pt) + 5)
-    plt.ylim(-max(y_pt) - 5, max(y_pt) + 5)
+    xmin = (-max(abs(x_pt))) - 5
+    xmax = (max(abs(x_pt))) + 5
+    ymin = (-max(abs(y_pt))) - 5
+    ymax = (max(abs(y_pt))) + 5
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
 
     # add quadrant lines
     plt.axhline(y=0, color='#737373')
@@ -394,12 +473,11 @@ def print_and_save_charts(data, max_week=14, week_current=1):
     chart_all_play(data, max_week, './outputs/4wins_against_week_avg.png')
     chart_team_median(data, max_week, './outputs/5median_scores.png')
     chart_team_opp_density(data, max_week, './outputs/6score_against_opp_density.png')
-    chart_powerrank_vs_rank(data, max_week, f'./outputs/week{current_week}_power_ranking.png')
+    chart_power_rank_by_week(full_data, max_week, './outputs/7power_ranking_by_week')
+    curr_powerrank_vs_rank(data, week_current, f'./outputs/week{current_week}_power_ranking.png')
     curr_matchup_chart(data, week_current, f'./outputs/week{current_week}_matchup_chart.png')
 
 
-# TODO: get player ytd average score
-# TODO: get player ytd power ranking
 
 if __name__ == '__main__':
     year = 2022
@@ -420,16 +498,17 @@ if __name__ == '__main__':
     # run the charts #
     ##################
     # set a max week (e.g. use 14 to only see regular season)
-    week_max = 14
+    week_max = 12
     # set current week to use on charts that are specific to a single week
     current_week = 8
-    # print_and_save_charts(full_data, week_max, current_week)
+    # ===>print_and_save_charts(full_data, week_max, current_week)
+
+    chart_power_rank_by_week(full_data, week_max)
 
     ######################
     # prints for testing #
     ######################
     # full_data.to_excel('./outputs/score_data.xlsx', index=False)
-    # print(full_data.sample(10).to_string())
-    chart_powerrank_vs_rank(full_data, current_week)
+    print(full_data.sample(10).to_string())
     # print(full_data.info())
     # print(full_data.corr(numeric_only=True).to_string())
