@@ -2,11 +2,11 @@ import requests
 import pandas as pd
 from setup_info import SWID, ESPN_S2, LEAGUE_ID
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import matplotlib.ticker as plticker
 import seaborn as sns
 import numpy as np
-import matplotlib.colors as mcolors
 from adjustText import adjust_text
-from scipy.interpolate import make_interp_spline
 
 def fetch_boxscore_data(url):
     req = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2})
@@ -292,7 +292,6 @@ def chart_power_rank_by_week(data, week, path=None):
     x_pt = data['matchup_period']
     y_pt = data['power_rank_ytd_asrank']
     label = data['team_name']
-    print(y_pt)
 
     fig, ax = plt.subplots()
 
@@ -306,6 +305,7 @@ def chart_power_rank_by_week(data, week, path=None):
                         linewidth=3,
                         markers=True, marker='o', markersize=7)
 
+    # set labels at end of lines
     for line, name in zip(ax.lines, label.tolist()):
         if len(line.get_ydata()) == 0:
             continue
@@ -320,7 +320,7 @@ def chart_power_rank_by_week(data, week, path=None):
 
         text = ax.annotate(name,
                            xy=(x, y),
-                           xytext=(5, -2),
+                           xytext=(12, -2),
                            color=line.get_color(),
                            xycoords=(ax.get_xaxis_transform(),
                                      ax.get_yaxis_transform()),
@@ -332,19 +332,22 @@ def chart_power_rank_by_week(data, week, path=None):
         if np.isfinite(text_width):
             ax.set_xlim(ax.get_xlim()[0], text.xy[0] + text_width * 1.05)
 
-    # Set labels and title
+    # set axis labels and title
+    plt.xlim(0.5, max(x_pt)+0.5)
     plt.xlabel('Week', size=9)
     plt.ylabel('Power Rank', size=9)
     plt.xticks(size=9, color='#737373')
     plt.yticks(size=9, color='#737373')
     plt.title(f'Final Rank vs Power Rank Points thru Week {week}', size=10)
+    loc = plticker.MultipleLocator(base=1.0)  # this locator puts ticks at regular intervals
+    plot.xaxis.set_major_locator(loc)
 
     plot.invert_yaxis()
 
-    plt.tight_layout()
-
     # Remove the legend
     plot.legend().set_visible(False)
+
+    plt.tight_layout()
 
     if path:
         plt.savefig(path, bbox_inches='tight')
@@ -414,7 +417,6 @@ def curr_matchup_chart(data, curr_week, path=None):
     # Replace values in the 'win' column using .loc
     data.loc[data['win'] == 1, 'win'] = 'win'
     data.loc[data['win'] == 0, 'win'] = 'loss'
-    print(data.head().to_string())
 
     sns.scatterplot(data=data, x=x_pt, y=y_pt,
                     hue='win',
@@ -473,9 +475,9 @@ def print_and_save_charts(data, max_week=14, week_current=1):
     chart_all_play(data, max_week, './outputs/4wins_against_week_avg.png')
     chart_team_median(data, max_week, './outputs/5median_scores.png')
     chart_team_opp_density(data, max_week, './outputs/6score_against_opp_density.png')
-    chart_power_rank_by_week(full_data, max_week, './outputs/7power_ranking_by_week')
-    curr_powerrank_vs_rank(data, week_current, f'./outputs/week{current_week}_power_ranking.png')
-    curr_matchup_chart(data, week_current, f'./outputs/week{current_week}_matchup_chart.png')
+    chart_power_rank_by_week(full_data, max_week, './outputs/7power_ranking_by_week.png')
+    curr_powerrank_vs_rank(data, week_current, f'./outputs/week{week_current}_power_ranking.png')
+    curr_matchup_chart(data, week_current, f'./outputs/week{week_current}_matchup_chart.png')
 
 
 
@@ -497,13 +499,11 @@ if __name__ == '__main__':
     ##################
     # run the charts #
     ##################
-    # set a max week (e.g. use 14 to only see regular season)
-    week_max = 12
-    # set current week to use on charts that are specific to a single week
-    current_week = 8
-    # ===>print_and_save_charts(full_data, week_max, current_week)
-
-    chart_power_rank_by_week(full_data, week_max)
+    # set a max week (e.g. use 14 to only see regular season) **max 17**
+    week_max = 17
+    # set current week to use on charts that are specific to a single week **max 17**
+    current_week = 17
+    # print_and_save_charts(full_data, week_max, current_week)
 
     ######################
     # prints for testing #

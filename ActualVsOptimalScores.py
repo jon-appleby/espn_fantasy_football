@@ -172,35 +172,55 @@ def transform_data(data, team):
     return point_df
 
 
-def chart_oae_pts(data, curr_week=1):
+def chart_oae_pts(data_input, curr_week=1):
     sns.set_theme(style='darkgrid')
 
     # sort for chart
-    data = data.sort_values(by='actual_pts', ascending=False)
+    data = data_input.sort_values(by='actual_pts', ascending=False)
 
     actual_pt_color = 'teal'
-    optimal_pt_colr = 'gray'
+    optimal_pt_color = 'gray'
     # Set up the figure and axes
     plt.figure(figsize=(10, 8))
     ax = sns.stripplot(data=data, x='actual_pts', y='team_name', marker='o', size=10, color=actual_pt_color)
 
     # Add line starting at a_pts and end at o_pts
     ax.hlines(y=data['team_name'], xmin=data['actual_pts'], xmax=data['optimal_pts'],
-              color=optimal_pt_colr, linewidth=4, linestyles='-')
+              color=optimal_pt_color, linewidth=4, linestyles='-')
 
     # Add dots at the end of the lines (optimal_pts and actual_pts)
-    plt.scatter(data['optimal_pts'], range(len(data)), color=optimal_pt_colr, marker='|', s=120, label='optimal_pts')
+    plt.scatter(data['optimal_pts'], range(len(data)), color=optimal_pt_color, marker='|', s=120, label='optimal_pts')
     plt.scatter(data['actual_pts'], range(len(data)), color=actual_pt_color, marker='o', s=120, label='actual_pts')
 
-    # Set labels and title
+    # Annotate actual_pts on the left and optimal_pts on the right
+    for index, row in data.iterrows():
+        ax.annotate(f'{row["actual_pts"]:.2f}',  # :.2f formats the value of the float to 2 decimals
+                    xy=(row['actual_pts'], row['team_name']),  # specify where to plot the text
+                    xytext=(-9, -1),  # specify offset of the xy coords above
+                    textcoords='offset points', color=actual_pt_color,
+                    fontsize=8, ha='right', va='center')
+
+        ax.annotate(f'{row["optimal_pts"]:.2f}', xy=(row['optimal_pts'], row['team_name']),
+                    xytext=(5, -1),
+                    textcoords='offset points', color=optimal_pt_color,
+                    fontsize=8, ha='left', va='center')
+
+    # Set axis labels and title
+    plt.xlim(min(data['actual_pts']-10), max(data['optimal_pts']+10))
     plt.xlabel('Points', size=9)
     plt.ylabel('Team', size=9)
     plt.xticks(size=9, color='#737373')
     plt.yticks(size=9, color='#737373')
     plt.title(f'Actual vs Optimal Points - Week {curr_week}', size=10)
 
+    # add point labels
+    # text = [plt.text(x, y, f'{name}', fontdict={'size': 9, 'color': '#4d5478'})
+    #         for (x, y, name) in zip(x_pt, y_pt, label)]
+
     # Add legend
     plt.legend()
+
+    plt.savefig(f'./outputs/week{curr_week}_actual_vs_optimal.png', bbox_inches='tight')
 
     plt.show()
 
@@ -224,7 +244,7 @@ if __name__ == '__main__':
     struc = [1, 2, 2, 1, 1, 1, 1]
 
     season = 2022
-    week = 6
+    week = 17
 
     d = get_matchups(league_id, season, week, swid=swid, espn=espn)
     slates = get_slates(d)
