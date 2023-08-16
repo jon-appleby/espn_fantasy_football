@@ -8,13 +8,16 @@ import seaborn as sns
 import numpy as np
 from adjustText import adjust_text
 
+
 def fetch_boxscore_data(url):
     req = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2})
     data = req.json()
     return data['schedule'], data['teams']
 
 
-def get_draftpos_rank(url):
+def get_draftpos_rank(curr_year):
+    url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{curr_year}/segments/0/' \
+                              f'leagues/{LEAGUE_ID}?view=mMatchup&view=mScoreboard&view=mSettings'
     req = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2})
     data = req.json()
 
@@ -333,7 +336,7 @@ def chart_power_rank_by_week(data, week, path=None):
             ax.set_xlim(ax.get_xlim()[0], text.xy[0] + text_width * 1.05)
 
     # set axis labels and title
-    plt.xlim(0.5, max(x_pt)+0.5)
+    plt.xlim(0.5, max(x_pt) + 0.5)
     plt.xlabel('Week', size=9)
     plt.ylabel('Power Rank', size=9)
     plt.xticks(size=9, color='#737373')
@@ -480,18 +483,16 @@ def print_and_save_charts(data, max_week=14, week_current=1):
     curr_matchup_chart(data, week_current, f'./outputs/week{week_current}_matchup_chart.png')
 
 
-
 if __name__ == '__main__':
     year = 2022
     league_id = LEAGUE_ID
     boxscore_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
                    f'leagues/{league_id}?view=mBoxscore'
     # use to get "rankCalculatedFinal"
-    scoreboard_settings_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
-                              f'leagues/{league_id}?view=mMatchup&view=mScoreboard&view=mSettings'
+
     # get data and create df
     schedule_data, teams = fetch_boxscore_data(boxscore_url)
-    draft_pos, rank_df = get_draftpos_rank(scoreboard_settings_url)
+    draft_pos, rank_df = get_draftpos_rank(year)
     score_df = create_matchup_data(schedule_data)
     team_df = create_team_data(teams)
     full_data = merge_transform_data(score_df, team_df, draft_pos, rank_df)
