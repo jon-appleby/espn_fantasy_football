@@ -17,17 +17,17 @@ https://fantasy.espn.com/apis/v3/games/ffl/leagueHistory/{league_id}?seasonId={s
     mSchedule
     mScoreboard
 
-# Fantasy ESPN API Library
+# Fantasy ESPN API Library #
 https://github.com/cwendt94/espn-api/wiki
 pip install espn_api
 
-# General ESPN API Library
+# General ESPN API Library #
 https://gist.github.com/akeaswaran/b48b02f1c94f873c6655e7129910fc3b
 
-# Seaborn / Matplotlib
+# Seaborn / Matplotlib #
 Matplotlib colormaps (cmap='viridis'): https://matplotlib.org/stable/tutorials/colors/colormaps.html
 
-# More metrics to create
+# More metrics to create #
 - Weekly power rankings
 - Actual vs Optimal points (weekly)
 - Draft position vs final position/overall score
