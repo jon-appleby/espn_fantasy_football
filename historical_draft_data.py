@@ -71,7 +71,7 @@ if __name__ == '__main__':
     year_end = 2022
     year_start = 2018
 
-    # draft_data = iterate_thru_years(year_end, year_start)
+    draft_data = iterate_thru_years(year_end, year_start)
     # print(draft_data.head())
 
     temp_data = pd.read_csv('./outputs/historical_draft_data_2018-2022.csv')

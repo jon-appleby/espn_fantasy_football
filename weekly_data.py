@@ -488,7 +488,6 @@ if __name__ == '__main__':
     league_id = LEAGUE_ID
     boxscore_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
                    f'leagues/{league_id}?view=mBoxscore'
-    # use to get "rankCalculatedFinal"
 
     # get data and create df
     schedule_data, teams = fetch_boxscore_data(boxscore_url)
@@ -497,19 +496,11 @@ if __name__ == '__main__':
     team_df = create_team_data(teams)
     full_data = merge_transform_data(score_df, team_df, draft_pos, rank_df)
 
-    ##################
-    # run the charts #
-    ##################
-    # set a max week (e.g. use 14 to only see regular season) **max 17**
-    week_max = 17
-    # set current week to use on charts that are specific to a single week **max 17**
-    current_week = 17
+    # run the charts
+    week_max = 17  # set a max week (e.g. use 14 to only see regular season) **max 17**
+    current_week = 17  # set current week to use on charts that are specific to a single week **max 17**
     # print_and_save_charts(full_data, week_max, current_week)
 
-    ######################
-    # prints for testing #
-    ######################
+    # prints for testing
+    print(full_data.head(12).sort_values(by='team_id').to_string())
     # full_data.to_excel('./outputs/score_data.xlsx', index=False)
-    print(full_data.sample(10).to_string())
-    # print(full_data.info())
-    # print(full_data.corr(numeric_only=True).to_string())
