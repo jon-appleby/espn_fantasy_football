@@ -58,10 +58,10 @@ def combine_draft_player(year):
     draft = pd.DataFrame(get_draft_data(year))
     player = pd.DataFrame(get_player_card(year))
 
-    draft = draft.merge(player, how='left', left_on='player_id', right_on='player_id')
+    draft_df = draft.merge(player, how='left', left_on='player_id', right_on='player_id')
 
-    print(draft)
+    return draft_df
 
 
 year = 2022
-combine_draft_player(year)
+draft = combine_draft_player(year)
