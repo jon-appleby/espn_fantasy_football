@@ -74,7 +74,7 @@ def get_final_draft_details(year):
 
 def rankings_drafted(year, path):
     """
-    create updated draft details with an indication if a player has been drafted
+    create updated draft details with an indicator if a player has been drafted
 
     :param year: current year of draft
     :param path: path to ranking details rankings are manually inserted to an Excel file from your fav source (e.g. ESPN ADP)
@@ -92,6 +92,13 @@ def rankings_drafted(year, path):
 
 
 def update_excel(year, path):
+    """
+    apply formatting by draft status and player position, then save file
+
+    :param year: current draft year
+    :param path: path to output file
+    :return: none
+    """
     updated_data = rankings_drafted(year, path)
 
     # write to open Excel file, do not save/close
@@ -99,8 +106,40 @@ def update_excel(year, path):
     cheat_sheet = work_book.sheets['cheat_sheet_live']
     cheat_sheet.range('A1').value = updated_data.set_index('ECR')
 
+    # apply formatting by draft status
+    player_name_range = cheat_sheet.range('B1:B{}'.format(len(updated_data)))
+    for cell in player_name_range:
+        if cell.offset(0, 4).value:
+            cell.color = (192, 0, 0)
+        else:
+            cell.color = (169, 208, 142)
+
+    ''' original draft formatting, potentially slightly faster '''
+    # apply conditional formatting by draft status
+    # for cell in cheat_sheet['F1'].expand('down'):
+    #     if cell.value:
+    #         cell.color = (169, 208, 142)
+    #     else:
+    #         cell.color = (192, 0, 0)
+
+    # apply formatting by position
+    for cell in cheat_sheet['C1'].expand('down'):
+        if cell.value == 'WR':
+            cell.color = (67, 171, 95)
+        elif cell.value == 'RB':
+            cell.color = (73, 112, 196)
+        elif cell.value == 'TE':
+            cell.color = (142, 102, 179)
+        elif cell.value == 'QB':
+            cell.color = (189, 77, 90)
+        elif cell.value == 'DST':
+            cell.color = (153, 124, 92)
+        elif cell.value == 'K':
+            cell.color = (168, 168, 168)
+
 
 if __name__ == '__main__':
     draft_year = 2022
-    output_path = './outputs/live_draft.xlsx'
+    test_output_path = './outputs/Live_Draft.xlsx'
+    output_path = 'C:/Users/apple/OneDrive/Documents/Python Stuff/Live_Draft.xlsx'
     update_excel(draft_year, output_path)
