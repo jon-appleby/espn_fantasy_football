@@ -1,3 +1,4 @@
+from espn_api import fetch_api_data
 from setup_info import SWID, ESPN_S2, LEAGUE_ID
 import requests
 import pandas as pd
@@ -5,21 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def get_matchups(league_id, season, week, swid='', espn=''):
-    '''
-    Pull full JSON of matchup data from ESPN API for a particular week.
-    '''
-
-    url = 'https://fantasy.espn.com/apis/v3/games/ffl/seasons/' + \
-          str(season) + '/segments/0/leagues/' + str(league_id)
-
-    r = requests.get(url + '?view=mMatchup&view=mMatchupScore',
-                     params={'scoringPeriodId': week, 'matchupPeriodId': week},
-                     cookies={"SWID": swid, "espn_s2": espn})
-    return r.json()
-
-
-def get_slates(json):
+def get_slates(data):
     '''
     Constructs week team slates with slotted position,
     position, and points (actual and ESPN projected),
@@ -28,7 +15,7 @@ def get_slates(json):
 
     slates = {}
 
-    for team in d['teams']:
+    for team in data['teams']:
         slate = []
         for p in team['roster']['entries']:
             # get name
@@ -206,7 +193,7 @@ def chart_oae_pts(data_input, curr_week=1):
                     fontsize=8, ha='left', va='center')
 
     # Set axis labels and title
-    plt.xlim(min(data['actual_pts']-10), max(data['optimal_pts']+10))
+    plt.xlim(min(data['actual_pts'] - 10), max(data['optimal_pts'] + 10))
     plt.xlabel('Points', size=9)
     plt.ylabel('Team', size=9)
     plt.xticks(size=9, color='#737373')
@@ -240,15 +227,15 @@ if __name__ == '__main__':
         21: 'IR',
         23: 'Flex'
     }
-    posns = ['QB', 'RB', 'WR', 'Flex', 'TE', 'D/ST', 'K']
-    struc = [1, 2, 2, 1, 1, 1, 1]
+    positions = ['QB', 'RB', 'WR', 'Flex', 'TE', 'D/ST', 'K']
+    structure = [1, 2, 2, 1, 1, 1, 1]
 
     season = 2022
     week = 17
 
-    d = get_matchups(league_id, season, week, swid=swid, espn=espn)
-    slates = get_slates(d)
-    point_data = compute_pts(slates, posns, struc)
+    slate_data = get_slates(fetch_api_data(views=['mMatchup', 'mMatchupScore'], year=season,
+                                           params={'scoringPeriodId': week, 'matchupPeriodId': week}))
+    point_data = compute_pts(slate_data, positions, structure)
     team_df = get_team_info()
 
     # prints for testing
