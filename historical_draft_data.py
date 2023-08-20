@@ -1,5 +1,4 @@
-from setup_info import SWID, ESPN_S2, LEAGUE_ID
-import requests
+from espn_api import fetch_api_data
 import pandas as pd
 import time
 import seaborn as sns
@@ -14,10 +13,7 @@ def iterate_thru_years(max_year, min_year=2018):
     while year <= max_year:
         print(f'getting data for {year}')
 
-        url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
-              f'leagues/{LEAGUE_ID}?view=mMatchup&view=mScoreboard&view=mSettings'
-        req = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2})
-        data = req.json()
+        data = fetch_api_data(views=['mScoreboard', 'mSettings'], year=year,)
 
         # iterate through the list and append to dict using index + 1 as team ID
         draft_list = []
@@ -72,9 +68,6 @@ if __name__ == '__main__':
     year_start = 2018
 
     draft_data = iterate_thru_years(year_end, year_start)
-    # print(draft_data.head())
-
-    temp_data = pd.read_csv('./outputs/historical_draft_data_2018-2022.csv')
-    print(temp_data.to_string())
-    chart_draft_v_rank(temp_data)
+    print(draft_data.head())
+    chart_draft_v_rank(draft_data)
 

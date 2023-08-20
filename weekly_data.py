@@ -1,3 +1,4 @@
+from espn_api import fetch_api_data
 import requests
 import pandas as pd
 from setup_info import SWID, ESPN_S2, LEAGUE_ID
@@ -9,17 +10,13 @@ import numpy as np
 from adjustText import adjust_text
 
 
-def fetch_boxscore_data(url):
-    req = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2})
-    data = req.json()
+def fetch_boxscore_data(curr_year):
+    data = fetch_api_data(views=['mBoxscore'], year=curr_year)
     return data['schedule'], data['teams']
 
 
 def get_draftpos_rank(curr_year):
-    url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{curr_year}/segments/0/' \
-                              f'leagues/{LEAGUE_ID}?view=mMatchup&view=mScoreboard&view=mSettings'
-    req = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2})
-    data = req.json()
+    data = fetch_api_data(views=['mMatchup', 'mScoreboard', 'mSettings'], year=curr_year)
 
     # iterate through the list and append to dict using index + 1 as team ID
     order = data['settings']['draftSettings']['pickOrder']
@@ -486,11 +483,9 @@ def print_and_save_charts(data, max_week=14, week_current=1):
 if __name__ == '__main__':
     year = 2022
     league_id = LEAGUE_ID
-    boxscore_url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
-                   f'leagues/{league_id}?view=mBoxscore'
 
     # get data and create df
-    schedule_data, teams = fetch_boxscore_data(boxscore_url)
+    schedule_data, teams = fetch_boxscore_data(year)
     draft_pos, rank_df = get_draftpos_rank(year)
     score_df = create_matchup_data(schedule_data)
     team_df = create_team_data(teams)
@@ -499,8 +494,8 @@ if __name__ == '__main__':
     # run the charts
     week_max = 17  # set a max week (e.g. use 14 to only see regular season) **max 17**
     current_week = 17  # set current week to use on charts that are specific to a single week **max 17**
-    # print_and_save_charts(full_data, week_max, current_week)
+    print_and_save_charts(full_data, week_max, current_week)
 
     # prints for testing
     print(full_data.head(12).sort_values(by='team_id').to_string())
-    # full_data.to_excel('./outputs/score_data.xlsx', index=False)
+    full_data.to_excel('./outputs/score_data.xlsx', index=False)

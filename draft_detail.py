@@ -1,7 +1,6 @@
+from espn_api import fetch_api_data
 import json
 import pandas as pd
-import requests
-from setup_info import SWID, ESPN_S2, LEAGUE_ID
 import xlwings as xw
 
 
@@ -12,9 +11,7 @@ def get_draft_data(year):
     :param year: int: current year
     :return: list of dict of current pick details
     """
-    url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
-          f'leagues/{LEAGUE_ID}?view=mMatchup&view=mDraftDetail'
-    data = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2}).json()
+    data = fetch_api_data(views=['mMatchup', 'mDraftDetail'], year=year)
 
     picks = data['draftDetail']['picks']
     draft_list = [
@@ -35,8 +32,6 @@ def get_player_card(year):
     :param year: current year
     :return: list of dict of player id and player first/last name
     """
-    url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
-          f'leagues/{LEAGUE_ID}?view=kona_playercard'
     filters = {"players": {"limit": 1500,
                            "sortDraftRanks": {
                                "sortPriority": 100,
@@ -46,7 +41,7 @@ def get_player_card(year):
                            }
                }
     headers = {'x-fantasy-filter': json.dumps(filters)}
-    data = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2}, headers=headers).json()
+    data = fetch_api_data(views=['kona_playercard'], year=year, header=headers)
 
     player_info = data['players']
     player_list = [
