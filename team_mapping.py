@@ -1,0 +1,12 @@
+team_id_mapping = {1: 'Jared',
+                   2: 'Lucas',
+                   3: 'Prem',
+                   4: 'Cole',
+                   5: 'Palak',
+                   6: 'Jon',
+                   7: 'Austin',
+                   8: 'Chris',
+                   9: 'Casey',
+                   10: 'MitchB',
+                   11: 'MitchP',
+                   12: 'Matt'}

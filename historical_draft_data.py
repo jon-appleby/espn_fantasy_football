@@ -1,8 +1,13 @@
 from espn_api import fetch_api_data
+import matplotlib.pyplot as plt
 import pandas as pd
+from random import randint
+from team_mapping import team_id_mapping
 import time
 import seaborn as sns
-import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 
 def iterate_thru_years(max_year, min_year=2018):
@@ -13,7 +18,7 @@ def iterate_thru_years(max_year, min_year=2018):
     while year <= max_year:
         print(f'getting data for {year}')
 
-        data = fetch_api_data(views=['mScoreboard', 'mSettings'], year=year,)
+        data = fetch_api_data(views=['mScoreboard', 'mSettings'], year=year, )
 
         # iterate through the list and append to dict using index + 1 as team ID
         draft_list = []
@@ -26,7 +31,7 @@ def iterate_thru_years(max_year, min_year=2018):
             draft_list.append(pos_dict)
         draft_df = pd.DataFrame(draft_list)
 
-        # iterate thru list of teams and get rank + team id
+        # iterate through list of teams and get rank + team id
         rank_list = []
         teams = data['teams']
         for team in teams:
@@ -44,7 +49,7 @@ def iterate_thru_years(max_year, min_year=2018):
         combine_df = pd.concat([combine_df, merge_df], sort=False, ignore_index=True)
 
         year += 1
-        time.sleep(5)  # sleep x secs to avoid over requesting
+        time.sleep(3)  # sleep x secs to avoid over requesting
 
     combine_df.to_csv(f'./outputs/historical_draft_data_{min_year}-{max_year}.csv')
     return combine_df
@@ -63,11 +68,64 @@ def chart_draft_v_rank(data):
     plt.show()
 
 
+def predict_rank(data):
+    train_df = data.loc[data['year'] < 2023]
+    test_df = data.loc[data['year'] == 2022]
+
+    # create training and test data
+    x_train = train_df[['draft_pos', 'team_id']]
+    y_train = train_df['rank']
+    print(x_train)
+
+    # for testing the model
+    x_test = test_df[['draft_pos', 'team_id']]
+    y_test = test_df['rank']
+
+    # create dataframe of 2023 draft
+    draft_pos = pd.DataFrame([{'draft_pos': 1, 'team_id': 6},
+                              {'draft_pos': 2, 'team_id': 9},
+                              {'draft_pos': 3, 'team_id': 2},
+                              {'draft_pos': 4, 'team_id': 10},
+                              {'draft_pos': 5, 'team_id': 5},
+                              {'draft_pos': 6, 'team_id': 1},
+                              {'draft_pos': 7, 'team_id': 4},
+                              {'draft_pos': 8, 'team_id': 7},
+                              {'draft_pos': 9, 'team_id': 12},
+                              {'draft_pos': 10, 'team_id': 11},
+                              {'draft_pos': 11, 'team_id': 8},
+                              {'draft_pos': 12, 'team_id': 3},
+                              ]
+                             )
+    print(draft_pos)
+
+    # create and fit model using training data
+    model = RandomForestRegressor(n_estimators=200, random_state=42)
+    model.fit(x_train, y_train)
+
+    # make predictions / test data on test data OR current 2023 draft
+    # predictions = model.predict(x_test)
+    predictions = pd.DataFrame(model.predict(draft_pos)).rename(columns={0: 'predicted_rank'})
+    print(predictions)
+
+    merged = draft_pos.merge(predictions, how='left', left_index=True, right_index=True)
+    merged['team_player_name'] = merged['team_id'].map(team_id_mapping)
+    merged.sort_values(by='predicted_rank', inplace=True)
+    print(merged)
+
+    # # evaluate model performance
+    # mse = mean_squared_error(y_test, predictions)
+    # print(f'mse = {mse}')
+    #
+    # mae = mean_absolute_error(y_test, predictions)
+    # print(f'mae = {mae}')
+
+
 if __name__ == '__main__':
     year_end = 2022
     year_start = 2018
 
-    draft_data = iterate_thru_years(year_end, year_start)
-    print(draft_data.head())
-    chart_draft_v_rank(draft_data)
+    # draft_data = iterate_thru_years(year_end, year_start)
+    # chart_draft_v_rank(draft_data)
 
+    draft_data = pd.read_csv('./outputs/historical_draft_data_2018-2022.csv').drop(columns='Unnamed: 0')
+    predict_rank(draft_data)
