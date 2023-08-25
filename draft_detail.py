@@ -1,3 +1,5 @@
+import datetime
+
 from espn_api import fetch_api_data
 import json
 import pandas as pd
@@ -12,6 +14,7 @@ def get_draft_data(year):
     :return: list of dict of current pick details
     """
     data = fetch_api_data(views=['mMatchup', 'mDraftDetail'], year=year)
+    # data = fetch_api_data(views=['mMatchup', 'mDraftDetail'], year=year, league=851935694)
 
     picks = data['draftDetail']['picks']
     draft_list = [
@@ -109,14 +112,6 @@ def update_excel(year, path):
         else:
             cell.color = (169, 208, 142)
 
-    ''' original draft formatting, potentially slightly faster '''
-    # apply conditional formatting by draft status
-    # for cell in cheat_sheet['F1'].expand('down'):
-    #     if cell.value:
-    #         cell.color = (169, 208, 142)
-    #     else:
-    #         cell.color = (192, 0, 0)
-
     # apply formatting by position
     for cell in cheat_sheet['C1'].expand('down'):
         if cell.value == 'WR':
@@ -132,9 +127,16 @@ def update_excel(year, path):
         elif cell.value == 'K':
             cell.color = (168, 168, 168)
 
+    ''' original draft formatting, potentially slightly faster '''
+    # apply conditional formatting by draft status
+    # for cell in cheat_sheet['F1'].expand('down'):
+    #     if cell.value:
+    #         cell.color = (169, 208, 142)
+    #     else:
+    #         cell.color = (192, 0, 0)
+
 
 if __name__ == '__main__':
-    draft_year = 2022
-    test_output_path = './outputs/Live_Draft.xlsx'
-    output_path = 'C:/Users/apple/OneDrive/Documents/Python Stuff/Live_Draft.xlsx'
+    draft_year = 2023
+    output_path = './live_draft/live_draft.xlsx'
     update_excel(draft_year, output_path)

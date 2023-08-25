@@ -2,7 +2,7 @@ import requests
 from setup_info import SWID, ESPN_S2, LEAGUE_ID
 
 
-def fetch_api_data(views, year, header=None, params=None):
+def fetch_api_data(views, year, header=None, params=None, league=LEAGUE_ID):
     """
     pull data from ESPN API using the view & year requested. headers/params are optional
 
@@ -10,10 +10,11 @@ def fetch_api_data(views, year, header=None, params=None):
     :param year: int: year to pull
     :param header: dict: optional for additional control on limits/filtering
     :param params: dict: optional for additional filtering
+    :param league: str: league ID, defaults to my league
     :return: data from api in json format
     """
     url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
-          f'leagues/{LEAGUE_ID}?'
+          f'leagues/{league}?'
 
     count = 0
     for v in views:

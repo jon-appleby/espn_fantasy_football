@@ -1,7 +1,5 @@
 from espn_api import fetch_api_data
-import requests
 import pandas as pd
-from setup_info import SWID, ESPN_S2, LEAGUE_ID
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.ticker as plticker
@@ -482,7 +480,6 @@ def print_and_save_charts(data, max_week=14, week_current=1):
 
 if __name__ == '__main__':
     year = 2022
-    league_id = LEAGUE_ID
 
     # get data and create df
     schedule_data, teams = fetch_boxscore_data(year)
