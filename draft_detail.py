@@ -112,20 +112,20 @@ def update_excel(year, path):
         else:
             cell.color = (169, 208, 142)
 
-    # apply formatting by position
-    for cell in cheat_sheet['C1'].expand('down'):
-        if cell.value == 'WR':
-            cell.color = (67, 171, 95)
-        elif cell.value == 'RB':
-            cell.color = (73, 112, 196)
-        elif cell.value == 'TE':
-            cell.color = (142, 102, 179)
-        elif cell.value == 'QB':
-            cell.color = (189, 77, 90)
-        elif cell.value == 'DST':
-            cell.color = (153, 124, 92)
-        elif cell.value == 'K':
-            cell.color = (168, 168, 168)
+    # # apply formatting by position
+    # for cell in cheat_sheet['C1'].expand('down'):
+    #     if cell.value == 'WR':
+    #         cell.color = (67, 171, 95)
+    #     elif cell.value == 'RB':
+    #         cell.color = (73, 112, 196)
+    #     elif cell.value == 'TE':
+    #         cell.color = (142, 102, 179)
+    #     elif cell.value == 'QB':
+    #         cell.color = (189, 77, 90)
+    #     elif cell.value == 'DST':
+    #         cell.color = (153, 124, 92)
+    #     elif cell.value == 'K':
+    #         cell.color = (168, 168, 168)
 
     ''' original draft formatting, potentially slightly faster '''
     # apply conditional formatting by draft status
