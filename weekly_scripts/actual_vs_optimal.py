@@ -1,5 +1,5 @@
-from espn_api import fetch_api_data
-from setup_info import SWID, ESPN_S2, LEAGUE_ID
+from main.espn_api import fetch_api_data
+from main.setup_info import SWID, ESPN_S2, LEAGUE_ID
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -7,11 +7,11 @@ import seaborn as sns
 
 
 def get_slates(data):
-    '''
+    """
     Constructs week team slates with slotted position,
     position, and points (actual and ESPN projected),
     given full matchup info (`get_matchups`)
-    '''
+    """
 
     slates = {}
 
@@ -120,24 +120,22 @@ def compute_pts(slates, posns, struc):
     return data
 
 
-def get_team_info():
+def get_team_info(year, league):
     '''
     get team name info and concat
     '''
-    # pull team/id (using other script) to join and get team names
-    url_base = 'https://fantasy.espn.com/apis/v3/games/ffl/seasons/2022/segments/0/leagues/REDACTED_LEAGUE_ID'
+    # pull team/id to join and get team names
+    url_base = (f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/leagues/{league}'
+                f'?view=mTeam')
 
     req = requests.get(url_base, cookies={'swid': SWID, 'espn_s2': ESPN_S2})
     data = req.json()
 
     team_df_temp = [[
         team_info['id'],
-        team_info['nickname'],
-        team_info['location']]
+        team_info['name']]
         for team_info in data['teams']]
-    teams = pd.DataFrame(team_df_temp, columns=['id', 'nickname', 'location'])
-    teams['team_name'] = teams['location'] + ' ' + teams['nickname']
-    teams.drop(columns=['nickname', 'location'], axis=1)
+    teams = pd.DataFrame(team_df_temp, columns=['id', 'team_name'])
 
     return teams
 
@@ -230,13 +228,13 @@ if __name__ == '__main__':
     positions = ['QB', 'RB', 'WR', 'Flex', 'TE', 'D/ST', 'K']
     structure = [1, 2, 2, 1, 1, 1, 1]
 
-    season = 2022
-    week = 17
+    season = 2023
+    week = 1
 
     slate_data = get_slates(fetch_api_data(views=['mMatchup', 'mMatchupScore'], year=season,
                                            params={'scoringPeriodId': week, 'matchupPeriodId': week}))
     point_data = compute_pts(slate_data, positions, structure)
-    team_df = get_team_info()
+    team_df = get_team_info(season, league_id)
 
     # prints for testing
     print_output = transform_data(point_data, team_df)

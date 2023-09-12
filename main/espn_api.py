@@ -1,5 +1,5 @@
 import requests
-from setup_info import SWID, ESPN_S2, LEAGUE_ID
+from main.setup_info import SWID, ESPN_S2, LEAGUE_ID
 
 
 def fetch_api_data(views, year, header=None, params=None, league=LEAGUE_ID):

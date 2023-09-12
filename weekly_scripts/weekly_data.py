@@ -1,4 +1,4 @@
-from espn_api import fetch_api_data
+from main.espn_api import fetch_api_data
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -23,10 +23,11 @@ def get_draftpos_rank(curr_year):
         index += 1
         pick_order.append({'team_id': str(pos), 'draft_pos': index})
 
-    # iterate thru list of teams and get rank + team id
+    rank_data = fetch_api_data(views=['mScoreboard'], year=curr_year)
+    # iterate through list of teams and get rank + team id
     rank_list = []
-    teams = data['teams']
-    for team in teams:
+    team_list = rank_data['teams']
+    for team in team_list:
         rank = team['rankCalculatedFinal']
         team_id = team['id']
         rank_list.append({'rank': rank, 'team_id': str(team_id)})
@@ -135,7 +136,7 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
         .merge(win_pct, on='team_id')
 
     # determine power ranking by player for each week
-    # ((avg score * 6) + ((highest score ytd + lowest score ytd) x 2) + ((win % x 200) x2) / 10
+    #   ((avg score * 6) + ((highest score ytd + lowest score ytd) x 2) + ((win % x 200) x2) / 10
     combine_df['power_rank_full'] = (
                                             (
                                                     (combine_df['team_avg_full'] * 6) + combine_df['team_hi_pts_full']
@@ -177,14 +178,19 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
 
 
 def chart_draft_pos_rank(data, week, path=None):
+    """ charts the draft position vs the current position through max_weeks """
+
     sns.set_theme(style='darkgrid', palette=None)
     data = data.loc[data['matchup_period'] <= week]
+
     # compare draft pos to rank
     pos_rank = sns.regplot(data=data,
                            x='draft_pos',
                            y='rank',
                            robust=True)
+
     pos_rank.invert_yaxis()
+
     plt.tight_layout()
     if path:
         plt.savefig(path, bbox_inches='tight')
@@ -194,6 +200,7 @@ def chart_draft_pos_rank(data, week, path=None):
 def chart_draft_vs_final(data, week, path=None):
     sns.set_theme(style='darkgrid', palette=None)
     data = data.loc[data['matchup_period'] <= week]
+
     # visualize where each player moved through the year from draft to final rank
     diff_data = data.groupby(by=['team_name',
                                  'draft_pos'])['draft_rank_diff'].min().reset_index().sort_values(by=['draft_pos'])
@@ -467,19 +474,19 @@ def curr_matchup_chart(data, curr_week, path=None):
 
 
 def print_and_save_charts(data, max_week=14, week_current=1):
-    chart_draft_pos_rank(data, max_week, './outputs/1pos to rank.png')
-    chart_draft_vs_final(data, max_week, './outputs/2diff draft to final.png')
-    chart_week_avg(data, max_week, './outputs/3weekly_avg_scores.png')
-    chart_all_play(data, max_week, './outputs/4wins_against_week_avg.png')
-    chart_team_median(data, max_week, './outputs/5median_scores.png')
-    chart_team_opp_density(data, max_week, './outputs/6score_against_opp_density.png')
-    chart_power_rank_by_week(full_data, max_week, './outputs/7power_ranking_by_week.png')
-    curr_powerrank_vs_rank(data, week_current, f'./outputs/week{week_current}_power_ranking.png')
-    curr_matchup_chart(data, week_current, f'./outputs/week{week_current}_matchup_chart.png')
+    chart_draft_pos_rank(data, max_week, f'../outputs/1-pos_to_rank_max{max_week}.png')
+    # chart_draft_vs_final(data, max_week, f'../outputs/2-diff_draft_to_final_max{max_week}.png')
+    chart_week_avg(data, max_week, f'../outputs/3-weekly_avg_scores_max{max_week}.png')
+    chart_all_play(data, max_week, f'../outputs/4-wins_against_week_avg_max{max_week}.png')
+    chart_team_median(data, max_week, f'../outputs/5-median_scores_max{max_week}.png')
+    chart_team_opp_density(data, max_week, f'../outputs/6-score_against_opp_density_max{max_week}.png')
+    chart_power_rank_by_week(full_data, max_week, f'../outputs/7-power_ranking_by_week_max{max_week}.png')
+    curr_powerrank_vs_rank(data, week_current, f'../outputs/8-week{week_current}_power_ranking.png')
+    curr_matchup_chart(data, week_current, f'../outputs/9-week{week_current}_matchup_chart.png')
 
 
 if __name__ == '__main__':
-    year = 2022
+    year = 2023
 
     # get data and create df
     schedule_data, teams = fetch_boxscore_data(year)
@@ -489,10 +496,10 @@ if __name__ == '__main__':
     full_data = merge_transform_data(score_df, team_df, draft_pos, rank_df)
 
     # run the charts
-    week_max = 17  # set a max week (e.g. use 14 to only see regular season) **max 17**
-    current_week = 17  # set current week to use on charts that are specific to a single week **max 17**
+    week_max = 1  # set a max week (e.g. use 14 to only see regular season) **max 17**
+    current_week = 1  # set current week to use on charts that are specific to a single week **max 17**
     print_and_save_charts(full_data, week_max, current_week)
 
     # prints for testing
     print(full_data.head(12).sort_values(by='team_id').to_string())
-    full_data.to_excel('./outputs/score_data.xlsx', index=False)
+    full_data.to_excel('../outputs/weekly_score_data.xlsx', index=False)

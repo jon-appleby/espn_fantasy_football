@@ -1,13 +1,10 @@
-from espn_api import fetch_api_data
+from main.espn_api import fetch_api_data
 import matplotlib.pyplot as plt
 import pandas as pd
-from random import randint
-from team_mapping import team_id_mapping
+from main.team_mapping import team_id_mapping
 import time
 import seaborn as sns
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.model_selection import RandomizedSearchCV
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.ensemble import RandomForestRegressor
 
 
 def iterate_thru_years(max_year, min_year=2018):
@@ -127,5 +124,5 @@ if __name__ == '__main__':
     # draft_data = iterate_thru_years(year_end, year_start)
     # chart_draft_v_rank(draft_data)
 
-    draft_data = pd.read_csv('./outputs/historical_draft_data_2018-2022.csv').drop(columns='Unnamed: 0')
+    draft_data = pd.read_csv('../Outputs/historical_draft_data_2018-2022.csv').drop(columns='Unnamed: 0')
     predict_rank(draft_data)
