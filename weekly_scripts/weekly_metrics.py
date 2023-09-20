@@ -23,12 +23,12 @@ def get_draftpos_rank(curr_year):
         index += 1
         pick_order.append({'team_id': str(pos), 'draft_pos': index})
 
-    rank_data = fetch_api_data(views=['mScoreboard'], year=curr_year)
+    rank_data = fetch_api_data(views=['mTeam'], year=curr_year)
     # iterate through list of teams and get rank + team id
     rank_list = []
     team_list = rank_data['teams']
     for team in team_list:
-        rank = team['rankCalculatedFinal']
+        rank = team['currentProjectedRank']
         team_id = team['id']
         rank_list.append({'rank': rank, 'team_id': str(team_id)})
 
@@ -343,7 +343,7 @@ def chart_power_rank_by_week(data, week, path=None):
     plt.ylabel('Power Rank', size=9)
     plt.xticks(size=9, color='#737373')
     plt.yticks(size=9, color='#737373')
-    plt.title(f'Final Rank vs Power Rank Points thru Week {week}', size=10)
+    plt.title(f'Power Rank by Week thru {week}', size=10)
     loc = plticker.MultipleLocator(base=1.0)  # this locator puts ticks at regular intervals
     plot.xaxis.set_major_locator(loc)
 
@@ -475,7 +475,7 @@ def curr_matchup_chart(data, curr_week, path=None):
 
 def print_and_save_charts(data, max_week=14, week_current=1):
     chart_draft_pos_rank(data, max_week, f'../outputs/1-pos_to_rank_max{max_week}.png')
-    # chart_draft_vs_final(data, max_week, f'../outputs/2-diff_draft_to_final_max{max_week}.png')
+    chart_draft_vs_final(data, max_week, f'../outputs/2-diff_draft_to_final_max{max_week}.png')
     chart_week_avg(data, max_week, f'../outputs/3-weekly_avg_scores_max{max_week}.png')
     chart_all_play(data, max_week, f'../outputs/4-wins_against_week_avg_max{max_week}.png')
     chart_team_median(data, max_week, f'../outputs/5-median_scores_max{max_week}.png')
@@ -496,8 +496,8 @@ if __name__ == '__main__':
     full_data = merge_transform_data(score_df, team_df, draft_pos, rank_df)
 
     # run the charts
-    week_max = 1  # set a max week (e.g. use 14 to only see regular season) **max 17**
-    current_week = 1  # set current week to use on charts that are specific to a single week **max 17**
+    week_max = 2  # set a max week (e.g. use 14 to only see regular season) **max 17**
+    current_week = 2  # set current week to use on charts that are specific to a single week **max 17**
     print_and_save_charts(full_data, week_max, current_week)
 
     # prints for testing

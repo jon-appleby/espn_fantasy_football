@@ -205,7 +205,7 @@ def chart_oae_pts(data_input, curr_week=1):
     # Add legend
     plt.legend()
 
-    plt.savefig(f'./outputs/week{curr_week}_actual_vs_optimal.png', bbox_inches='tight')
+    plt.savefig(f'../outputs/week{curr_week}_actual_vs_optimal.png', bbox_inches='tight')
 
     plt.show()
 
@@ -229,7 +229,7 @@ if __name__ == '__main__':
     structure = [1, 2, 2, 1, 1, 1, 1]
 
     season = 2023
-    week = 1
+    week = 2
 
     slate_data = get_slates(fetch_api_data(views=['mMatchup', 'mMatchupScore'], year=season,
                                            params={'scoringPeriodId': week, 'matchupPeriodId': week}))
