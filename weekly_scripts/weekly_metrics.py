@@ -110,7 +110,8 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
 
     # calculate whether each matchup is a win and/or win against avg
     combine_df['win'] = np.where(combine_df['team_points'] > combine_df['opp_points'], 1, 0)
-    combine_df['all_play_win'] = np.where(combine_df['team_points'] > combine_df['week_avg'], 1, 0)
+    # renamed from all_play_win
+    combine_df['win_vs_avg'] = np.where(combine_df['team_points'] > combine_df['week_avg'], 1, 0)
 
     # calculate pts over/under week avg
     combine_df['team_pts_v_avg'] = combine_df['team_points'] - combine_df['week_avg']
@@ -171,6 +172,9 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
                                    ) / 10
 
     combine_df['power_rank_ytd_asrank'] = combine_df.groupby('matchup_period')['power_rank_ytd'].rank(ascending=False)
+
+    # create all_play_win for each week, rank team points minus 1 to excluding "playing self"
+    combine_df['all_play_win'] = combine_df.groupby('matchup_period')['team_points'].rank() - 1
 
     combine_df = combine_df.sort_values(by='matchup_period')
 
@@ -236,13 +240,54 @@ def chart_week_avg(data, week, path=None):
 def chart_all_play(data, week, path=None):
     sns.set_theme(style='darkgrid', palette=None)
     data = data.loc[data['matchup_period'] <= week]
-    # all play win count
+
+    # all play win count, ratio, and actual ratio
     all_play = data.groupby(data['team_name'])['all_play_win'].sum().sort_values(ascending=False).reset_index()
+    all_play['all_play_ratio'] = all_play.all_play_win / (week * 11)
+
+    actual_ratio = data.loc[data['matchup_period'] == week][['team_name', 'win_pct_ytd']]
+    all_play = pd.merge(all_play, actual_ratio, how='left', left_on='team_name', right_on='team_name')
+
+    # calc difference
+    all_play['ratio_diff'] = round(all_play.win_pct_ytd - all_play.all_play_ratio, 2)
+
+    plt.figure(figsize=(10, 6))
     sns.barplot(data=all_play,
                 y='team_name',
-                x='all_play_win',
-                palette='crest').set(title=f'Wins against Weekly Avg for weeks '
-                                           f'{min(data["matchup_period"])}-{max(data["matchup_period"])}')
+                x='all_play_ratio',
+                color='#1c6689',
+                label='All Play Ratio',
+                alpha=0.9)
+    sns.barplot(data=all_play,
+                y='team_name',
+                x='win_pct_ytd',
+                color='#b0b0b0',
+                label='Actual Ratio',
+                alpha=0.7)
+
+    for i, team in all_play.iterrows():
+        print(team)
+        if team.ratio_diff < 0:
+            text = team.ratio_diff
+        else:
+            text = f'+{team.ratio_diff}'
+        plt.text(team.all_play_ratio + 0.01,
+                 i,
+                 text,
+                 ha='left', va='center',
+                 fontdict={'family': 'arial', 'size': 9, 'color': '#262626'}
+                 )
+
+    # set labels / legend
+    plt.title(f'All Play Win/Loss for Weeks {min(data["matchup_period"])}-{max(data["matchup_period"])}')
+    plt.ylabel('Team')
+    plt.xlabel('Win/Loss Ratio')
+    plt.legend(loc='lower right')
+
+    # set x ticks
+    plt.xticks([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+               ['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%'])
+
     plt.tight_layout()
     if path:
         plt.savefig(path)
@@ -266,8 +311,10 @@ def chart_team_median(data, week, path=None):
     label_y = 50  # Adjust this value to position the label
     for team_name in box_chart_order:
         rank = data[data['team_name'] == team_name]['rank'].values[0]
-        plt.text(box_chart_order.index(team_name), label_y,
-                 rank, ha='center', va='bottom')
+        plt.text(box_chart_order.index(team_name),
+                 label_y,
+                 rank,
+                 ha='center', va='bottom')
     plt.tight_layout()
     if path:
         plt.savefig(path, bbox_inches='tight')
@@ -477,7 +524,7 @@ def print_and_save_charts(data, max_week=14, week_current=1):
     chart_draft_pos_rank(data, max_week, f'../outputs/1-pos_to_rank_max{max_week}.png')
     chart_draft_vs_final(data, max_week, f'../outputs/2-diff_draft_to_final_max{max_week}.png')
     chart_week_avg(data, max_week, f'../outputs/3-weekly_avg_scores_max{max_week}.png')
-    chart_all_play(data, max_week, f'../outputs/4-wins_against_week_avg_max{max_week}.png')
+    chart_all_play(data, max_week, f'../outputs/4-all_play_wins{max_week}.png')
     chart_team_median(data, max_week, f'../outputs/5-median_scores_max{max_week}.png')
     chart_team_opp_density(data, max_week, f'../outputs/6-score_against_opp_density_max{max_week}.png')
     chart_power_rank_by_week(full_data, max_week, f'../outputs/7-power_ranking_by_week_max{max_week}.png')
@@ -501,5 +548,5 @@ if __name__ == '__main__':
     print_and_save_charts(full_data, week_max, current_week)
 
     # prints for testing
-    print(full_data.head(12).sort_values(by='team_id').to_string())
+    print(full_data.head(24).sort_values(by='team_id').to_string())
     full_data.to_excel('../outputs/weekly_score_data.xlsx', index=False)
