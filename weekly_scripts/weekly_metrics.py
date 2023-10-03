@@ -542,8 +542,8 @@ if __name__ == '__main__':
     full_data = merge_transform_data(score_df, team_df, draft_pos, rank_df)
 
     # run the charts
-    week_max = 3  # set a max week (e.g. use 14 to only see regular season) **max 17**
-    current_week = 3  # set current week to use on charts that are specific to a single week **max 17**
+    week_max = 4  # set a max week (e.g. use 14 to only see regular season) **max 17**
+    current_week = 4  # set current week to use on charts that are specific to a single week **max 17**
     print_and_save_charts(full_data, week_max, current_week)
 
     # prints for testing

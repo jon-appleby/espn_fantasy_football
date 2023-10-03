@@ -229,7 +229,7 @@ if __name__ == '__main__':
     structure = [1, 2, 2, 1, 1, 1, 1]
 
     season = 2023
-    week = 3
+    week = 4
 
     slate_data = get_slates(fetch_api_data(views=['mMatchup', 'mMatchupScore'], year=season,
                                            params={'scoringPeriodId': week, 'matchupPeriodId': week}))
