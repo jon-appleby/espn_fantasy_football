@@ -1,6 +1,8 @@
 import requests
 from main.setup_info import SWID, ESPN_S2, LEAGUE_ID
 
+COOKIES = {"SWID": SWID, "espn_s2": ESPN_S2}
+
 
 def fetch_api_data(views, year, header=None, params=None, league=LEAGUE_ID):
     """
@@ -28,12 +30,26 @@ def fetch_api_data(views, year, header=None, params=None, league=LEAGUE_ID):
             url = url + 'view=' + v
 
     if header and params:
-        data = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2}, headers=header, params=params).json()
+        data = requests.get(url, cookies=COOKIES, headers=header, params=params).json()
     elif header:
-        data = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2}, headers=header).json()
+        data = requests.get(url, cookies=COOKIES, headers=header).json()
     elif params:
-        data = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2}, params=params).json()
+        data = requests.get(url, cookies=COOKIES, params=params).json()
     else:
-        data = requests.get(url, cookies={"SWID": SWID, "espn_s2": ESPN_S2}).json()
+        data = requests.get(url, cookies=COOKIES).json()
+
+    return data
+
+
+def fetch_transactions(year):
+    url = (f'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/leagues/{LEAGUE_ID}'
+           '?view=mStatus'
+           '&view=mSettings'
+           '&view=mTeam'
+           '&view=mTransactions2'
+           '&view=modular'
+           '&view=mNav')
+
+    data = requests.get(url, cookies=COOKIES).json()
 
     return data

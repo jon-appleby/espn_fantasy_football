@@ -1,4 +1,4 @@
-from main.espn_api import fetch_api_data
+from main.espn_api import fetch_api_data, fetch_transactions
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -78,7 +78,29 @@ def create_team_data(team_for_dict):
     return pd.DataFrame(team_list)
 
 
-def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df):
+def create_transactions(curr_year):
+    data = fetch_transactions(curr_year)
+    team_list = []
+    for team in data['teams']:
+        tran = team['transactionCounter']
+        trans_dict = {
+            'team_id': str(team['id'])
+            , 'acquisitions': tran['acquisitions']
+            , 'drops': tran['drops']
+            , 'trades': tran['trades']
+            , 'activate': tran['moveToActive']
+            , 'ir': tran['moveToIR']
+        }
+        team_list.append(trans_dict)
+
+    df = pd.DataFrame(team_list)
+    df['total_transactions'] = df.acquisitions + df.drops + df.trades
+    df['total_trans_no_ir'] = df.total_transactions - df.ir
+
+    return df
+
+
+def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df, trans_df):
     """
     merge main data inputs, then create additional fields used later for plotting
     """
@@ -137,7 +159,6 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
         .merge(win_pct, on='team_id')
 
     # determine power ranking by player for each week
-    #   ((avg score * 6) + ((highest score ytd + lowest score ytd) x 2) + ((win % x 200) x2) / 10
     combine_df['power_rank_full'] = (
                                             (
                                                     (combine_df['team_avg_full'] * 6) + combine_df['team_hi_pts_full']
@@ -175,6 +196,9 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
 
     # create all_play_win for each week, rank team points minus 1 to excluding "playing self"
     combine_df['all_play_win'] = combine_df.groupby('matchup_period')['team_points'].rank() - 1
+
+    # merge transaction data
+    combine_df = pd.merge(combine_df, trans_df, left_on='team_id', right_on='team_id')
 
     combine_df = combine_df.sort_values(by='matchup_period')
 
@@ -267,11 +291,11 @@ def chart_all_play(data, week, path=None):
 
     for i, team in all_play.iterrows():
         if team.ratio_diff < 0:
-            text = team.ratio_diff
+            text = format(team.ratio_diff, '.0%')
         else:
-            text = f'+{team.ratio_diff}'
+            text = f'+{format(team.ratio_diff, ".0%")}'
         plt.text(team.all_play_ratio + 0.01,
-                 i,
+                 float(i),
                  text,
                  ha='left', va='center',
                  fontdict={'family': 'arial', 'size': 9, 'color': '#262626'}
@@ -406,14 +430,14 @@ def chart_power_rank_by_week(data, week, path=None):
 
 
 def curr_powerrank_vs_rank(data, curr_week, path=None):
-    sns.set_theme(style='darkgrid', palette=None)
-    data = data.loc[data['matchup_period'] == curr_week]
-
     """
     calculate power rank using weeks up until current week
     same calculation used in transform_data function, but re-calculating below after filtering on week
     this allows for seeing intra-year or historical power ranking
     """
+
+    sns.set_theme(style='darkgrid', palette=None)
+    data = data.loc[data['matchup_period'] == curr_week]
 
     # sort data for chart
     data = data.sort_values(by='power_rank_ytd_asrank')
@@ -519,6 +543,22 @@ def curr_matchup_chart(data, curr_week, path=None):
     plt.show()
 
 
+def transaction_chart(data, curr_week, path=None):
+    sns.set_theme(style='darkgrid', palette=None)
+    data = data.loc[data['matchup_period'] == curr_week]
+
+    p = sns.regplot(data=data, x='total_trans_no_ir', y='rank')
+    p.invert_yaxis()
+    p.invert_xaxis()
+
+    plt.title('Total Transactions (Add/Drop) vs Rank')
+
+    plt.tight_layout()
+    if path:
+        plt.savefig(path, bbox_inches='tight')
+    plt.show()
+
+
 def print_and_save_charts(data, max_week=14, week_current=1):
     chart_draft_pos_rank(data, max_week, f'../outputs/1-pos_to_rank_max{max_week}.png')
     chart_draft_vs_final(data, max_week, f'../outputs/2-diff_draft_to_final_max{max_week}.png')
@@ -529,6 +569,7 @@ def print_and_save_charts(data, max_week=14, week_current=1):
     chart_power_rank_by_week(full_data, max_week, f'../outputs/7-power_ranking_by_week_max{max_week}.png')
     curr_powerrank_vs_rank(data, week_current, f'../outputs/8-week{week_current}_power_ranking.png')
     curr_matchup_chart(data, week_current, f'../outputs/9-week{week_current}_matchup_chart.png')
+    transaction_chart(data, week_current, f'../outputs/11-week{week_current}_transactions.png')
 
 
 if __name__ == '__main__':
@@ -539,11 +580,17 @@ if __name__ == '__main__':
     draft_pos, rank_df = get_draftpos_rank(year)
     score_df = create_matchup_data(schedule_data)
     team_df = create_team_data(teams)
-    full_data = merge_transform_data(score_df, team_df, draft_pos, rank_df)
+    trans_data = create_transactions(year)
+    full_data = merge_transform_data(score_df,
+                                     team_df,
+                                     draft_pos,
+                                     rank_df,
+                                     trans_data
+                                     )
 
     # run the charts
-    week_max = 4  # set a max week (e.g. use 14 to only see regular season) **max 17**
-    current_week = 4  # set current week to use on charts that are specific to a single week **max 17**
+    week_max = 5  # set a max week (e.g. use 14 to only see regular season) **max 17**
+    current_week = 5  # set current week to use on charts that are specific to a single week **max 17**
     print_and_save_charts(full_data, week_max, current_week)
 
     # prints for testing
