@@ -547,11 +547,11 @@ def transaction_chart(data, curr_week, path=None):
     sns.set_theme(style='darkgrid', palette=None)
     data = data.loc[data['matchup_period'] == curr_week]
 
-    p = sns.regplot(data=data, x='total_trans_no_ir', y='rank')
+    p = sns.regplot(data=data, x='total_trans_no_ir', y='power_rank_ytd_asrank')
     p.invert_yaxis()
     p.invert_xaxis()
 
-    plt.title('Total Transactions (Add/Drop) vs Rank')
+    plt.title('Total Transactions (Add/Drop) vs Power Rank')
 
     plt.tight_layout()
     if path:
@@ -589,10 +589,10 @@ if __name__ == '__main__':
                                      )
 
     # run the charts
-    week_max = 5  # set a max week (e.g. use 14 to only see regular season) **max 17**
-    current_week = 5  # set current week to use on charts that are specific to a single week **max 17**
+    week_max = 6  # set a max week (e.g. use 14 to only see regular season) **max 17**
+    current_week = 6  # set current week to use on charts that are specific to a single week **max 17**
     print_and_save_charts(full_data, week_max, current_week)
 
     # prints for testing
-    print(full_data.head(24).sort_values(by='team_id').to_string())
+    print(full_data.head(24).sort_values(by='matchup_period').to_string())
     full_data.to_excel('../outputs/weekly_score_data.xlsx', index=False)
