@@ -589,8 +589,8 @@ if __name__ == '__main__':
                                      )
 
     # run the charts
-    week_max = 6  # set a max week (e.g. use 14 to only see regular season) **max 17**
-    current_week = 6  # set current week to use on charts that are specific to a single week **max 17**
+    week_max = 9  # set a max week (e.g. use 14 to only see regular season) **max 17**
+    current_week = 9  # set current week to use on charts that are specific to a single week **max 17**
     print_and_save_charts(full_data, week_max, current_week)
 
     # prints for testing
