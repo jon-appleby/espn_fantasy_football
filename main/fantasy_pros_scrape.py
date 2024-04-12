@@ -1,6 +1,6 @@
 from selenium import webdriver
 from time import sleep
-from setup_info import FP_USER, FP_PW
+from main.setup_info import FP_USER, FP_PW
 
 year = 2023
 week = 2

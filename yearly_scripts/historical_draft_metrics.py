@@ -118,11 +118,11 @@ def predict_rank(data):
 
 
 if __name__ == '__main__':
-    year_end = 2022
+    year_end = 2023
     year_start = 2018
 
     # draft_data = iterate_thru_years(year_end, year_start)
     # chart_draft_v_rank(draft_data)
 
-    draft_data = pd.read_csv('../Outputs/historical_draft_data_2018-2022.csv').drop(columns='Unnamed: 0')
+    # draft_data = pd.read_csv('../outputs/historical_draft_data_2018-2022.csv').drop(columns='Unnamed: 0')
     predict_rank(draft_data)
