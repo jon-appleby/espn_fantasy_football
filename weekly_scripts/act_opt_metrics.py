@@ -229,8 +229,9 @@ if __name__ == '__main__':
     structure = [1, 2, 2, 1, 1, 1, 1]
 
     season = 2023
-    week = 9
+    week = 17
 
+    # https://fantasy.espn.com/apis/v3/games/ffl/seasons/2023/segments/0/leagues/REDACTED_LEAGUE_ID?view=mMatchup&view=mMatchupScore&scoringPeriodId=9&matchupPeriodId=9
     slate_data = get_slates(fetch_api_data(views=['mMatchup', 'mMatchupScore'], year=season,
                                            params={'scoringPeriodId': week, 'matchupPeriodId': week}))
     point_data = compute_pts(slate_data, positions, structure)
