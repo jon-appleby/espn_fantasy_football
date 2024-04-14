@@ -1,31 +1,59 @@
 from main.espn_api import fetch_api_data
 
 
-def fetch_boxscore_data(curr_year, curr_week):
-    data = fetch_api_data(views=['mBoxscore'], params={'matchupPeriodId': curr_week}, year=curr_year)
-    return data['schedule'], data['teams']
+def get_teams(curr_year, curr_week):
+    data = fetch_api_data(views=['mMatchup'],
+                          params={'matchupPeriodId': curr_week, 'scoringPeriodId': week},
+                          year=curr_year)
+    return data['teams']
+
+
+def get_boxscore(curr_year, curr_week):
+    data = fetch_api_data(views=['mBoxscore'],
+                          params={'matchupPeriodId': curr_week, 'scoringPeriodId': week},
+                          year=curr_year)
+    return data['teams']
+
+
+def get_player_info(curr_year, curr_week):
+    data = fetch_api_data(views=['kona_player_info'],
+                          params={'matchupPeriodId': curr_week, 'scoringPeriodId': week},
+                          year=curr_year)
+    return data
 
 
 def get_team_ids(team_input) -> dict[int, str]:
     # create team dict
     team_dict = {}
     for team in team_input:
-        id = team['id']
+        team_id = team['id']
         name = team['name']
-        team_dict[id] = name
+        team_dict[team_id] = name
 
     return team_dict
 
 
-# def get_team_detail(team_input):
-    # for team in team_input:
-    #     roster = team['roster']['entries']
-    #     print(roster)
+def team_detail(team_input):
+    for team in team_input:
+        team_id = team['id']
+        roster = team['roster']['entries']
+        if team_id == 6:
+            for player in roster:
+                player_detail = player['playerPoolEntry']['player']
+                player_name = player_detail['fullName']
+                player_status = player_detail.get('injuryStatus', '')
 
 
-schedule_data, team_data = fetch_boxscore_data(2023, 1)
-print(team_data)
+year = 2023
+week = 4
+
+team_data = get_boxscore(year, week)
 get_team_ids(team_data)
-# get_team_detail(team_data)
+
+player_data = get_teams(year, week)
+team_detail(player_data)
+
+print(get_player_info(year, week))
+
 
 # get starting players
