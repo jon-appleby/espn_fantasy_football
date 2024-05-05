@@ -3,21 +3,21 @@ from main.espn_api import fetch_api_data
 
 def get_teams(curr_year, curr_week):
     data = fetch_api_data(views=['mMatchup'],
-                          params={'matchupPeriodId': curr_week, 'scoringPeriodId': week},
+                          params={'matchupPeriodId': curr_week, 'scoringPeriodId': curr_week},
                           year=curr_year)
     return data['teams']
 
 
 def get_boxscore(curr_year, curr_week):
     data = fetch_api_data(views=['mBoxscore'],
-                          params={'matchupPeriodId': curr_week, 'scoringPeriodId': week},
+                          params={'matchupPeriodId': curr_week, 'scoringPeriodId': curr_week},
                           year=curr_year)
     return data['teams']
 
 
 def get_player_info(curr_year, curr_week):
     data = fetch_api_data(views=['kona_player_info'],
-                          params={'matchupPeriodId': curr_week, 'scoringPeriodId': week},
+                          params={'matchupPeriodId': curr_week, 'scoringPeriodId': curr_week},
                           year=curr_year)
     return data
 
@@ -47,11 +47,11 @@ def team_detail(team_input):
 year = 2023
 week = 4
 
-team_data = get_boxscore(year, week)
-get_team_ids(team_data)
-
-player_data = get_teams(year, week)
-team_detail(player_data)
+# team_data = get_boxscore(year, week)
+# get_team_ids(team_data)
+#
+# player_data = get_teams(year, week)
+# team_detail(player_data)
 
 print(get_player_info(year, week))
 

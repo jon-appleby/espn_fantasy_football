@@ -15,7 +15,7 @@ def fetch_api_data(views: list, year: int, header: dict = None, params: dict = N
     :param league: league ID, defaults to my league
     :return: data from api in json format
     """
-    url = f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
+    url = f'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
           f'leagues/{league}?'
 
     count = 0
