@@ -15,8 +15,8 @@ def fetch_api_data(views: list, year: int, header: dict = None, params: dict = N
     :param league: league ID, defaults to my league
     :return: data from api in json format
     """
-    url = f'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/' \
-          f'leagues/{league}?'
+
+    url = f'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/leagues/{league}?'
 
     count = 0
     for v in views:
@@ -53,3 +53,11 @@ def fetch_transactions(year):
     data = requests.get(url, cookies=COOKIES).json()
 
     return data
+
+
+if __name__ == '__main__':
+    print('\nfetch_api_data')
+    print(fetch_api_data(['mMatchup'], 2023, league=REDACTED_LEAGUE_ID))
+
+    print('\nfetch_transactions')
+    print(fetch_transactions( 2023))

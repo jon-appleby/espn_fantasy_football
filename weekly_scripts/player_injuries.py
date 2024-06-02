@@ -22,6 +22,10 @@ def get_player_info(curr_year, curr_week):
     return data
 
 
+def get_roster_info(curr_year, curr_week):
+    return
+
+
 def get_team_ids(team_input) -> dict[int, str]:
     # create team dict
     team_dict = {}
@@ -45,15 +49,14 @@ def team_detail(team_input):
 
 
 year = 2023
-week = 4
+week = 5
 
 # team_data = get_boxscore(year, week)
 # get_team_ids(team_data)
-#
-# player_data = get_teams(year, week)
+
+player_data = get_teams(year, week)
+print(player_data)
+
 # team_detail(player_data)
-
-print(get_player_info(year, week))
-
-
-# get starting players
+#
+# print(get_player_info(year, week))

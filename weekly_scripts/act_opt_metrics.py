@@ -124,12 +124,8 @@ def get_team_info(year, league):
     '''
     get team name info and concat
     '''
-    # pull team/id to join and get team names
-    url_base = (f'https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/leagues/{league}'
-                f'?view=mTeam')
 
-    req = requests.get(url_base, cookies={'swid': SWID, 'espn_s2': ESPN_S2})
-    data = req.json()
+    data = fetch_api_data(views=['mTeam'], year=year, league=league)
 
     team_df_temp = [[
         team_info['id'],
