@@ -24,8 +24,7 @@ def get_player_info(curr_year, curr_week):
     while True:
         data = fetch_api_data(views=['kona_player_info'],
                               params=params,
-                              year=curr_year,
-                              header=header)
+                              year=curr_year)
 
         p = data.get('players', [])
         all_players.extend(p)
