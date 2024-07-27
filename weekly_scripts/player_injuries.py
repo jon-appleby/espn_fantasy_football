@@ -17,32 +17,24 @@ from time import sleep
 
 
 def get_player_info(curr_year, curr_week):
-    params = {'scoringPeriodId': curr_week, 'limit': 50, 'startIndex': 0}
+    view = ['kona_player_info']
+    params = {'scoringPeriodId': curr_week}
     header = {"x-fantasy-filter": '{"players":{"limit":1500}}'}
-    all_players = []
+    header = {
+        'x-fantasy-filter':
+            '{"players": '
+            '{"limit": "1500", "sortDraftRanks": '
+            '{ "sortPriority": "100", "sortAsc": "true", "value": "STANDARD"}}}'
+    }
 
-    while True:
-        data = fetch_api_data(views=['kona_player_info'],
-                              params=params,
-                              year=curr_year)
-
-        p = data.get('players', [])
-        all_players.extend(p)
-
-        if len(p) < params['limit']:
-            break
-
-        params['startIndex'] += params['limit']
-
-        sleep(2)
+    data = fetch_api_data(views=view,
+                          params=params,
+                          year=curr_year,
+                          header=header)
 
     return data
 
 
-# def get_roster_info(curr_year, curr_week):
-#     return
-#
-#
 # def get_team_ids(team_input) -> dict[int, str]:
 #     # create team dict
 #     team_dict = {}
@@ -52,17 +44,17 @@ def get_player_info(curr_year, curr_week):
 #         team_dict[team_id] = name
 #
 #     return team_dict
-
-
-def team_detail(team_input):
-    for team in team_input:
-        team_id = team['id']
-        roster = team['roster']['entries']
-        if team_id == 6:
-            for player in roster:
-                player_detail = player['playerPoolEntry']['player']
-                player_name = player_detail['fullName']
-                player_status = player_detail.get('injuryStatus', '')
+#
+#
+# def team_detail(team_input):
+#     for team in team_input:
+#         team_id = team['id']
+#         roster = team['roster']['entries']
+#         if team_id == 6:
+#             for player in roster:
+#                 player_detail = player['playerPoolEntry']['player']
+#                 player_name = player_detail['fullName']
+#                 player_status = player_detail.get('injuryStatus', '')
 
 
 year = 2023
@@ -77,14 +69,14 @@ week = 5
 # team_detail(player_data)
 
 player_data = get_player_info(year, week)
-players = player_data.get('players', [])
-injury_status_list = []
 
+players = player_data.get('players', [])
+
+injury_status_list = []
 for player in players:
     injury_status = player['player'].get('injuryStatus', 'n/a')
-    full_name = player['player'].get('fullName', 'N/A')
-    injury_status_list.append({'player_name': full_name, 'injury_status': injury_status})
-
+    full_name = player['player'].get('fullName', 'n/a')
+    player_id = player['player'].get('id', 'n/a')
+    injury_status_list.append({'player_id': player_id, 'player_name': full_name, 'injury_status': injury_status})
 df = pd.DataFrame(injury_status_list)
-
-print(df)
+print(df.head().to_string())
