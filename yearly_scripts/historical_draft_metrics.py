@@ -48,15 +48,15 @@ def iterate_thru_years(max_year, min_year=2018):
         year += 1
         time.sleep(3)  # sleep x secs to avoid over requesting
 
-    combine_df.to_csv(f'./outputs/historical_draft_data_{min_year}-{max_year}.csv')
+    combine_df.to_csv(f'../outputs/historical_draft_data_{min_year}-{max_year}.csv')
     return combine_df
 
 
-def chart_draft_v_rank(data):
+def chart_draft_v_rank(d):
     sns.set_theme(style='darkgrid', palette=None)
 
     # compare draft pos to rank
-    pos_rank = sns.regplot(data=data,
+    pos_rank = sns.regplot(data=d,
                            x='draft_pos',
                            y='rank',
                            robust=True)
@@ -65,35 +65,35 @@ def chart_draft_v_rank(data):
     plt.show()
 
 
-def predict_rank(data):
-    train_df = data.loc[data['year'] < 2023]
-    test_df = data.loc[data['year'] == 2022]
+def predict_rank(d, curr_year):
+    print('\npredicting ranks based on draft pos')
+
+    train_df = d.loc[d['year'] < curr_year]
 
     # create training and test data
     x_train = train_df[['draft_pos', 'team_id']]
     y_train = train_df['rank']
-    print(x_train)
 
     # for testing the model
-    x_test = test_df[['draft_pos', 'team_id']]
-    y_test = test_df['rank']
+    # test_df = d.loc[d['year'] == curr_year-2]
+    # x_test = test_df[['draft_pos', 'team_id']]
+    # y_test = test_df['rank']
 
-    # create dataframe of 2023 draft
-    draft_pos = pd.DataFrame([{'draft_pos': 1, 'team_id': 6},
-                              {'draft_pos': 2, 'team_id': 9},
-                              {'draft_pos': 3, 'team_id': 2},
+    # create dataframe of 2024 draft
+    draft_pos = pd.DataFrame([{'draft_pos': 1, 'team_id': 8},
+                              {'draft_pos': 2, 'team_id': 12},
+                              {'draft_pos': 3, 'team_id': 5},
                               {'draft_pos': 4, 'team_id': 10},
-                              {'draft_pos': 5, 'team_id': 5},
+                              {'draft_pos': 5, 'team_id': 9},
                               {'draft_pos': 6, 'team_id': 1},
                               {'draft_pos': 7, 'team_id': 4},
                               {'draft_pos': 8, 'team_id': 7},
-                              {'draft_pos': 9, 'team_id': 12},
-                              {'draft_pos': 10, 'team_id': 11},
-                              {'draft_pos': 11, 'team_id': 8},
-                              {'draft_pos': 12, 'team_id': 3},
+                              {'draft_pos': 9, 'team_id': 3},
+                              {'draft_pos': 10, 'team_id': 6},
+                              {'draft_pos': 11, 'team_id': 2},
+                              {'draft_pos': 12, 'team_id': 11},
                               ]
                              )
-    print(draft_pos)
 
     # create and fit model using training data
     model = RandomForestRegressor(n_estimators=200, random_state=42)
@@ -102,7 +102,6 @@ def predict_rank(data):
     # make predictions / test data on test data OR current 2023 draft
     # predictions = model.predict(x_test)
     predictions = pd.DataFrame(model.predict(draft_pos)).rename(columns={0: 'predicted_rank'})
-    print(predictions)
 
     merged = draft_pos.merge(predictions, how='left', left_index=True, right_index=True)
     merged['team_player_name'] = merged['team_id'].map(team_id_mapping)
@@ -120,9 +119,12 @@ def predict_rank(data):
 if __name__ == '__main__':
     year_end = 2023
     year_start = 2018
+    current_year = 2024
 
-    # draft_data = iterate_thru_years(year_end, year_start)
-    # chart_draft_v_rank(draft_data)
+    # data = iterate_thru_years(min_year=year_start, max_year=year_end)
 
-    # draft_data = pd.read_csv('../outputs/historical_draft_data_2018-2022.csv').drop(columns='Unnamed: 0')
-    predict_rank(draft_data)
+    """replace above 'data' with below file after running to save on API calls"""
+    data = pd.read_csv('../Outputs/historical_draft_data_2018-2023.csv')
+    chart_draft_v_rank(data)
+    predict_rank(data, curr_year=current_year)
+
