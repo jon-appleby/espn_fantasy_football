@@ -19,12 +19,16 @@ from time import sleep
 def get_player_info(curr_year, curr_week):
     view = ['kona_player_info']
     params = {'scoringPeriodId': curr_week}
-    header = {"x-fantasy-filter": '{"players":{"limit":1500}}'}
+    # header = {"x-fantasy-filter": '{"players":{"limit":1500}}'}
     header = {
         'x-fantasy-filter':
             '{"players": '
             '{"limit": "1500", "sortDraftRanks": '
-            '{ "sortPriority": "100", "sortAsc": "true", "value": "STANDARD"}}}'
+            '{ "sortPriority": "100", '
+            '"sortAsc": "true", '
+            # '"value": "STANDARD"'
+            '"value": "PPR"'
+            '}}}'
     }
 
     data = fetch_api_data(views=view,
@@ -58,7 +62,7 @@ def get_player_info(curr_year, curr_week):
 
 
 year = 2023
-week = 5
+week = 11
 
 # team_data = get_boxscore(year, week)
 # get_team_ids(team_data)
@@ -79,4 +83,5 @@ for player in players:
     player_id = player['player'].get('id', 'n/a')
     injury_status_list.append({'player_id': player_id, 'player_name': full_name, 'injury_status': injury_status})
 df = pd.DataFrame(injury_status_list)
-print(df.head().to_string())
+ak = df.loc[df['player_name'] == 'Alvin Kamara']
+print(ak.head().to_string())
