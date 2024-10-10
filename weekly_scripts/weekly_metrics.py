@@ -532,7 +532,7 @@ def print_and_save_charts(data, max_week=14, week_current=1):
 
 
 if __name__ == '__main__':
-    year = 2023
+    year = 2024
 
     # get data and create df
     schedule_data, teams = fetch_boxscore_data(year)
@@ -542,8 +542,8 @@ if __name__ == '__main__':
     full_data = merge_transform_data(score_df, team_df, draft_pos, rank_df)
 
     # run the charts
-    week_max = 4  # set a max week (e.g. use 14 to only see regular season) **max 17**
-    current_week = 4  # set current week to use on charts that are specific to a single week **max 17**
+    week_max = 5  # set a max week (e.g. use 14 to only see regular season) **max 17**
+    current_week = 5  # set current week to use on charts that are specific to a single week **max 17**
     print_and_save_charts(full_data, week_max, current_week)
 
     # prints for testing
