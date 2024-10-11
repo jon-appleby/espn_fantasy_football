@@ -1,7 +1,7 @@
 from main.espn_api import fetch_api_data
 import matplotlib.pyplot as plt
 import pandas as pd
-from main.team_mapping import team_id_mapping
+from main.team_mapping import team_id_user
 import time
 import seaborn as sns
 from sklearn.ensemble import RandomForestRegressor
@@ -104,7 +104,7 @@ def predict_rank(d, curr_year):
     predictions = pd.DataFrame(model.predict(draft_pos)).rename(columns={0: 'predicted_rank'})
 
     merged = draft_pos.merge(predictions, how='left', left_index=True, right_index=True)
-    merged['team_player_name'] = merged['team_id'].map(team_id_mapping)
+    merged['team_player_name'] = merged['team_id'].map(team_id_user)
     merged.sort_values(by='predicted_rank', inplace=True)
     print(merged)
 

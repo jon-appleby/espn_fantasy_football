@@ -1,87 +1,125 @@
 import pandas as pd
-from main.espn_api import fetch_api_data
 from time import sleep
-
-# def get_teams(curr_year, curr_week):
-#     data = fetch_api_data(views=['mMatchup'],
-#                           params={'matchupPeriodId': curr_week, 'scoringPeriodId': curr_week},
-#                           year=curr_year)
-#     return data['teams']
-#
-#
-# def get_boxscore(curr_year, curr_week):
-#     data = fetch_api_data(views=['mBoxscore'],
-#                           params={'matchupPeriodId': curr_week, 'scoringPeriodId': curr_week},
-#                           year=curr_year)
-#     return data['teams']
+from weekly_scripts.act_opt_metrics import get_slates
+from main.espn_api import fetch_api_data
+from main.team_mapping import team_id_name
 
 
-def get_player_info(curr_year, curr_week):
-    view = ['kona_player_info']
-    params = {'scoringPeriodId': curr_week}
-    # header = {"x-fantasy-filter": '{"players":{"limit":1500}}'}
-    header = {
-        'x-fantasy-filter':
-            '{"players": '
-            '{"limit": "1500", "sortDraftRanks": '
-            '{ "sortPriority": "100", '
-            '"sortAsc": "true", '
-            # '"value": "STANDARD"'
-            '"value": "PPR"'
-            '}}}'
-    }
+def get_injured_players(year) -> pd.DataFrame:
+    """
+    pull ALL injured players for all weeks (1-14) from nfl.com
 
-    data = fetch_api_data(views=view,
-                          params=params,
-                          year=curr_year,
-                          header=header)
+    "injured" players includes out, questionable, and doubtful. the NFL data does not appear to update
+    once a player moves to out status from questionable
 
-    return data
+    filter to QB, WR, RB, TE and game status of out
+    :return: dataframe
+    """
+    print('\ngetting injured players')
+    w = 1
+    max_w = 14
+
+    df_list = []
+    for _ in range(max_week):
+        url = f'https://www.nfl.com/injuries/league/{year}/reg{w}'
+        try:
+            week_df_list = pd.read_html(url)
+        except ValueError:
+            print(f'weeks {w}-{max_w} not populated yet')
+            break
+        else:
+            for d in week_df_list:
+                d.columns = d.columns.str.lower()
+                d['week'] = w
+                df_list.append(d)
+            print(f'week {w} complete')
+        finally:
+            sleep(15)
+            w += 1
+
+    full_df = pd.concat(df_list)
+    full_df['player_status'] = ''
+    full_df['player_status'] = full_df['player_status'].astype(object)
+    full_df.loc[full_df['game status'].notnull(), 'player_status'] = 'out'
+    full_df['player_status'].replace('', 'in', inplace=True)
+
+    df = full_df.loc[full_df['position'].isin(['QB', 'WR', 'RB', 'TE'])]
+
+    df.to_excel('../Outputs/player_injuries.xlsx', index=False)
+
+    return df
 
 
-# def get_team_ids(team_input) -> dict[int, str]:
-#     # create team dict
-#     team_dict = {}
-#     for team in team_input:
-#         team_id = team['id']
-#         name = team['name']
-#         team_dict[team_id] = name
-#
-#     return team_dict
-#
-#
-# def team_detail(team_input):
-#     for team in team_input:
-#         team_id = team['id']
-#         roster = team['roster']['entries']
-#         if team_id == 6:
-#             for player in roster:
-#                 player_detail = player['playerPoolEntry']['player']
-#                 player_name = player_detail['fullName']
-#                 player_status = player_detail.get('injuryStatus', '')
+def weekly_players(max_week_num, year, team_mapping) -> pd.DataFrame:
+    """
+    pull all players for each team by week, excluding K & D/ST
+
+    :return: dataframe of player name, slot position, week, and team name
+    """
+
+    print('\ngetting weekly players for each team')
+
+    w = 1
+    slate_list = []
+    for _ in range(max_week_num):
+        espn_data = fetch_api_data(views=['mMatchup', 'mMatchupScore'], year=year,
+                                   params={'scoringPeriodId': w, 'matchupPeriodId': w})
+        slates = get_slates(espn_data, week_num=w)
+        for team_id, slate in slates.items():
+            slate['week'] = w
+            slate['team_id'] = team_id
+            slate['team_name'] = slate['team_id'].map(team_mapping)
+            starting_players = slate.loc[~slate['Slot'].isin(['D/ST', 'K'])]
+            starting_players = starting_players[['Name', 'Slot', 'week', 'team_id', 'team_name']]
+            slate_list.append(starting_players)
+            # print(slate)
+
+        print(f'week {w} complete')
+        w += 1
+        sleep(15)
+
+    df = pd.concat(slate_list)
+
+    # df.to_excel('../test/weekly_players.xlsx', index=False)
+
+    return df
 
 
-year = 2023
-week = 11
+def team_injuries(injuries, fantasy_data) -> pd.DataFrame:
+    """
+    takes all injured players and merges with the fantasy lineup for each team
 
-# team_data = get_boxscore(year, week)
-# get_team_ids(team_data)
+    :return: dataframe of all players on the team's roster with their injury status from NFL.com
+    """
 
-# player_data = get_teams(year, week)
-# print(player_data)
+    print('\n merging injury and fantasy team data')
 
-# team_detail(player_data)
+    df = pd.merge(left=fantasy_data, right=injuries, how='left', left_on=['Name', 'week'], right_on=['player', 'week'])
+    df.columns = df.columns.str.lower()
+    df['player_status'].fillna('in', inplace=True)
 
-player_data = get_player_info(year, week)
+    df.drop(columns=['player', 'injuries', 'position', 'practice status'], inplace=True)
+    df['player_status'] = df.apply(lambda row: 'out' if row['slot'] == 'IR' else row['player_status'], axis=1)
+    df.rename(columns={'game status': 'game_status'}, inplace=True)
 
-players = player_data.get('players', [])
+    df.to_excel('../Outputs/team_injuries.xlsx', index=False)
 
-injury_status_list = []
-for player in players:
-    injury_status = player['player'].get('injuryStatus', 'n/a')
-    full_name = player['player'].get('fullName', 'n/a')
-    player_id = player['player'].get('id', 'n/a')
-    injury_status_list.append({'player_id': player_id, 'player_name': full_name, 'injury_status': injury_status})
-df = pd.DataFrame(injury_status_list)
-ak = df.loc[df['player_name'] == 'Alvin Kamara']
-print(ak.head().to_string())
+    return df
+
+
+if __name__ == '__main__':
+    season = 2024
+    max_week = 6  # replace with current week, or set to 14 for full season
+
+    teams = team_id_name(season)
+
+    # injury status from NFL.com
+    # injured_players = pd.read_excel('../Outputs/player_injuries.xlsx')
+    injured_players = get_injured_players(year=season)
+
+    # players from each fantasy team
+    # weekly_players = pd.read_excel('../test/weekly_players.xlsx')
+    weekly_players = weekly_players(max_week_num=max_week, year=season, team_mapping=teams)
+
+    # combined fantasy team and injury status from NFL.com
+    team_injuries = team_injuries(injuries=injured_players, fantasy_data=weekly_players)

@@ -6,13 +6,26 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def get_slates(data):
+def get_slates(data, week_num) -> dict[str: pd.DataFrame]:
     """
     Constructs week team slates with slotted position,
     position, and points (actual and ESPN projected),
     given full matchup info (`get_matchups`)
+
+    :return dict containing team id: dataframe with slot (position, bench, or ir)
     """
 
+    slotcodes = {
+        0: 'QB', 1: 'QB',
+        2: 'RB', 3: 'RB',
+        4: 'WR', 5: 'WR',
+        6: 'TE', 7: 'TE',
+        16: 'D/ST',
+        17: 'K',
+        20: 'Bench',
+        21: 'IR',
+        23: 'Flex'
+    }
     slates = {}
 
     for team in data['teams']:
@@ -28,7 +41,7 @@ def get_slates(data):
             # get projected and actual scores
             act, proj = 0, 0
             for stat in p['playerPoolEntry']['player']['stats']:
-                if stat['scoringPeriodId'] != week:
+                if stat['scoringPeriodId'] != week_num:
                     continue
                 if stat['statSourceId'] == 0:
                     act = stat['appliedTotal']
@@ -137,9 +150,9 @@ def get_team_info(year, league):
 
 
 def transform_data(data, team):
-    '''
+    """
     get data and teams, merge and prepare data for use later
-    '''
+    """
     point_df = pd.DataFrame(data).transpose()
     point_df['TeamID'] = range(1, 1 + len(point_df))
     point_df = pd.merge(point_df, team[['id', 'team_name']], left_on='TeamID', right_on='id', how='left')
@@ -210,17 +223,6 @@ if __name__ == '__main__':
     swid = SWID
     espn = ESPN_S2
     league_id = LEAGUE_ID
-    slotcodes = {
-        0: 'QB', 1: 'QB',
-        2: 'RB', 3: 'RB',
-        4: 'WR', 5: 'WR',
-        6: 'TE', 7: 'TE',
-        16: 'D/ST',
-        17: 'K',
-        20: 'Bench',
-        21: 'IR',
-        23: 'Flex'
-    }
     positions = ['QB', 'RB', 'WR', 'Flex', 'TE', 'D/ST', 'K']
     structure = [1, 2, 2, 1, 1, 1, 1]
 
@@ -228,13 +230,16 @@ if __name__ == '__main__':
     week = 5
 
     # https://fantasy.espn.com/apis/v3/games/ffl/seasons/2023/segments/0/leagues/REDACTED_LEAGUE_ID?view=mMatchup&view=mMatchupScore&scoringPeriodId=9&matchupPeriodId=9
-    slate_data = get_slates(fetch_api_data(views=['mMatchup', 'mMatchupScore'], year=season,
-                                           params={'scoringPeriodId': week, 'matchupPeriodId': week}))
+    slate_data = get_slates(
+        fetch_api_data(views=['mMatchup', 'mMatchupScore'], year=season,
+                       params={'scoringPeriodId': week, 'matchupPeriodId': week}),
+        week_num=week
+    )
     point_data = compute_pts(slate_data, positions, structure)
     team_df = get_team_info(season, league_id)
 
     # prints for testing
-    print_output = transform_data(point_data, team_df)
-    print(print_output.to_string())
+    # print_output = transform_data(point_data, team_df)
+    # print(print_output.to_string())
 
     chart_oae_pts(transform_data(point_data, team_df), week)
