@@ -271,7 +271,7 @@ def chart_all_play(data, week, path=None):
         else:
             text = f'+{team.ratio_diff}'
         plt.text(team.all_play_ratio + 0.01,
-                 i,
+                 float(i),
                  text,
                  ha='left', va='center',
                  fontdict={'family': 'arial', 'size': 9, 'color': '#262626'}

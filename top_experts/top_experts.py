@@ -16,9 +16,12 @@ for root, dirs, files in os.walk('./input'):
         file_df.drop_duplicates(inplace=True)
         file_df['max_year'] = int(year)
         file_df['min_year'] = int(year)
+        file_df['Rank'].replace({0: 99}, inplace=True)
+        file_df['Rank'] = file_df['Rank'].astype(int)
+
         if 'SeasonToDate' in file:
             df_dict['in_season'].append(file_df)
-        else:
+        elif 'Draft_Accuracy' in file:
             df_dict['draft'].append(file_df)
 
 for group, dfs in df_dict.items():
@@ -77,7 +80,7 @@ for group, dfs in df_dict.items():
         print('in season expert rankings')
         print(final_df.head(15).to_string(), '\n')
 
-        final_df.to_csv('./output/experts_by_rank_in-season.csv')
+        final_df.to_csv('../Outputs/experts_by_rank_in-season.csv')
     else:
         final_df = df.loc[
             (df['num_years'] > 2)  # has at least 3 years of rankings
@@ -93,4 +96,4 @@ for group, dfs in df_dict.items():
         print('draft expert rankings')
         print(final_df.head(15).to_string(), '\n')
 
-        final_df.to_csv('./output/experts_by_rank_draft.csv')
+        final_df.to_csv('../Outputs/experts_by_rank_draft.csv')
