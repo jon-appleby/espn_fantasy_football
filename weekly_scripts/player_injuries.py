@@ -39,7 +39,7 @@ def nfl_injuries(year) -> pd.DataFrame:
                 df_list.append(d)
             print(f'week {w} complete')
         finally:
-            sleep(15)
+            sleep(5)
             w += 1
 
     full_df = pd.concat(df_list)
@@ -83,7 +83,7 @@ def fantasy_players(max_week_num, year, team_mapping) -> pd.DataFrame:
 
         print(f'week {w} complete')
         w += 1
-        sleep(15)
+        sleep(5)
 
     df = pd.concat(slate_list)
 
@@ -137,51 +137,29 @@ def chart_injuries(data, max_week_num):
 
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    sns.lineplot(data=filtered, x='week',
-                 y='player_status_weight',
-                 hue='team_name',
-                 palette=custom_palette,
-                 errorbar=None,
-                 linewidth=2,
-                 markers=True,
-                 marker='s',
-                 markersize=5,
-                 ax=ax,
-                 legend=False
-                 ).set()
+    sns.barplot(data=filtered,
+                x='week',
+                y='player_status_weight',
+                hue='team_name',
+                palette=custom_palette,
+                ax=ax,
+                legend=False
+                )
 
-    team_names = filtered['team_name'].unique()
-    y_offsets = {}
+    for bar, (_, row) in zip(ax.patches, filtered.iterrows()):
+        x_value = bar.get_x() + bar.get_width() / 2  # X coordinate (center of the bar)
+        y_value = bar.get_height()  # Y coordinate (height of the bar)
 
-    for spine in ax.spines.values():
-        spine.set_visible(False)
+        # display player_status_weight on top of each bar
+        ax.text(x=x_value+0.01, y=y_value+0.03, s=f'{y_value:.2f}', ha='center', va='bottom',
+                fontsize=6, color='black', rotation='vertical')
 
-    # 3. Add player names next to their last marker
-    for line, team_name in zip(ax.get_lines(), team_names):
-        # Get the data (x and y values) from the line
-        data = line.get_xydata()
-
-        # Ensure the line has data points
-        if data.size > 0:
-            # Get the last data point (x, y)
-            x_last, y_last = data[-1]
-
-            # Use the original y_last for lookup, and apply offset if necessary
-            if y_last in y_offsets:
-                # Increase the offset for subsequent labels at the same y position
-                y_offset = y_offsets[y_last] * 0.1  # Adjust the offset scale as needed
-                y_offsets[y_last] += 1  # Increment the offset count
-            else:
-                # First occurrence of this y-value, initialize the offset counter
-                y_offsets[y_last] = 1
-                y_offset = 0  # No offset for the first occurrence
-
-            # 4. Place the text label slightly offset from the last point
-            ax.text(x_last + 0.1, y_last + y_offset, team_name, fontsize=9, color=line.get_color(),
-                    verticalalignment='center', horizontalalignment='left')
+        # display team_name within each bar
+        ax.text(x=x_value+0.008, y=y_value / 2, s=row['team_name'], ha='center', va='center',
+                fontsize=7, color='white', rotation='vertical')
 
     plt.xlabel('Week', size=9)
-    plt.ylabel('Player Injury Weight', size=9)
+    plt.ylabel('Player Injuries', size=9)
     plt.xticks(size=9, color='#737373')
     plt.yticks(size=9, color='#737373')
 
@@ -194,17 +172,17 @@ def chart_injuries(data, max_week_num):
 
 if __name__ == '__main__':
     season = 2024
-    max_week = 6  # replace with current week, or set to 14 for full season
+    max_week = 10  # replace with current week, or set to 14 for full season
 
     teams = team_id_name(season)
 
     # injury status from NFL.com
-    injured_players = pd.read_excel('../Outputs/player_injuries.xlsx')
-    # injured_players = nfl_injuries(year=season)
+    # injured_players = pd.read_excel('../Outputs/player_injuries.xlsx')
+    injured_players = nfl_injuries(year=season)
 
     # players from each fantasy team
-    weekly_players = pd.read_excel('../test/weekly_players.xlsx')
-    # weekly_players = fantasy_players(max_week_num=max_week, year=season, team_mapping=teams)
+    # weekly_players = pd.read_excel('../test/weekly_players.xlsx')
+    weekly_players = fantasy_players(max_week_num=max_week, year=season, team_mapping=teams)
 
     # combined fantasy team and injury status from NFL.com
     team_injuries = team_injuries(injuries=injured_players, fantasy_data=weekly_players)

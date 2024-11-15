@@ -1,0 +1,59 @@
+https://cran.r-project.org/web/packages/ffscrapr/vignettes/espn_getendpoint.html
+
+# The ESPN Fantasy API is typically accessed from two endpoints:
+New API as of May 2024: https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2023/segments/0/leagues/REDACTED_LEAGUE_ID
+For seasons >= 2018: https://fantasy.espn.com/apis/v3/games/ffl/seasons/2023/segments/0/leagues/REDACTED_LEAGUE_ID
+For seasons <= 2017: https://fantasy.espn.com/apis/v3/games/ffl/leagueHistory/{league_id}?seasonId={season}
+
+# Here’s a non-exhaustive list of view endpoints that I know of:
+(use ?view={endpoint} after above URL to see json in browser, or ?view={endpoint}&view={endpoint} to combine)
+(use &<field>=<value> to add parameters)
+    mTeam
+    mMatchup
+    mRoster
+    mSettings
+    mBoxscore
+    mMatchupScore
+    kona_player_info
+    player_wl
+    mSchedule
+    mScoreboard
+    mTransactions2
+
+# Fantasy ESPN API Library
+https://github.com/cwendt94/espn-api/wiki
+pip install espn_api
+
+# General ESPN API Library
+https://gist.github.com/akeaswaran/b48b02f1c94f873c6655e7129910fc3b
+
+# ESPN API Github
+https://github.com/cwendt94/espn-api/blob/master/espn_api/requests/espn_requests.py#L122
+
+# Seaborn / Matplotlib #
+Matplotlib colormaps (cmap='viridis'): https://matplotlib.org/stable/tutorials/colors/colormaps.html
+
+# More metrics to create #
+- Highest win-loss margins (duplicate?)
+- Injured *starting* players (not sure on this)
+- Number of times played against player's best week
+
+# Team ID / Team Name
+team_id	team_name
+1	Jared
+2	Lucas
+3	Prem
+4	Cole
+5	Palak
+6	Jon
+7	Austin
+8	Chris
+9	Casey
+10	Mitch B
+11	Mitch P
+12	Matt
+
+https://gist.github.com/nntrn/ee26cb2a0716de0947a0a4e9a157bc1c
+
+- Player stats for each game:
+    https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/{YEAR}/athletes/{ATHLETE_ID}/eventlog
