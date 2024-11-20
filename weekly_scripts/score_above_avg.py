@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import pandas as pd
+import dataframe_image as dfi
 from weekly_metrics import fetch_boxscore_data, create_matchup_data
 from main.team_mapping import team_id_name
 
@@ -80,7 +82,28 @@ def create_chart(data, year):
     plt.show()
 
 
+def summarize_data(data: pd.DataFrame, year):
+    df = data.drop_duplicates('team1_name')['team1_name']
+
+    data = data.loc[data['opp_avg_diff'] > 0]
+    count = data.groupby('team1_name').size().reset_index(name='count')
+    avg = data.groupby('team1_name')['opp_avg_diff'].mean().reset_index(name='average')
+
+    df = pd.merge(left=df, right=count, how='left', on='team1_name')
+    df = pd.merge(left=df, right=avg, how='left', on='team1_name')
+    df['total'] = df['count'] * df['average']
+    df = df.sort_values(by='total', ascending=False)
+    df = df.rename(columns={'team1_name': 'team'})
+    df.index = df['team']
+    df = df.drop(columns='team')
+
+    print(df)
+
+    dfi.export(df, f'../Outputs/13-year_{year}_score_above_avg.png')
+
+
 y = 2024
 d = create_data(y)
 print(d.to_string())
+summarize_data(d, y)
 create_chart(d, y)

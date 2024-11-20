@@ -525,7 +525,7 @@ def print_and_save_charts(data, max_week=14, week_current=1):
     chart_week_avg(data, max_week, f'../outputs/3-weekly_avg_scores_max{max_week}.png')
     chart_all_play(data, max_week, f'../outputs/4-all_play_wins{max_week}.png')
     chart_team_median(data, max_week, f'../outputs/5-median_scores_max{max_week}.png')
-    chart_team_opp_density(data, max_week, f'../outputs/6-score_against_opp_density_max{max_week}.png')
+    # chart_team_opp_density(data, max_week, f'../outputs/6-score_against_opp_density_max{max_week}.png')
     chart_power_rank_by_week(full_data, max_week, f'../outputs/7-power_ranking_by_week_max{max_week}.png')
     curr_powerrank_vs_rank(data, week_current, f'../outputs/8-week{week_current}_power_ranking.png')
     curr_matchup_chart(data, week_current, f'../outputs/9-week{week_current}_matchup_chart.png')
@@ -534,8 +534,8 @@ def print_and_save_charts(data, max_week=14, week_current=1):
 if __name__ == '__main__':
     year = 2024
     # run the charts
-    week_max = 10  # set a max week (e.g. use 14 to only see regular season) **max 17**
-    current_week = 10  # set current week to use on charts that are specific to a single week **max 17**
+    week_max = 11  # set a max week (e.g. use 14 to only see regular season) **max 17**
+    current_week = 11  # set current week to use on charts that are specific to a single week **max 17**
 
     # get data and create df
     schedule_data, teams = fetch_boxscore_data(year)
