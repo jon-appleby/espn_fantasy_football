@@ -1,12 +1,12 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 import dataframe_image as dfi
 from weekly_metrics import fetch_boxscore_data, create_matchup_data
 from main.team_mapping import team_id_name
 
 
 def create_data(year):
-
     def win_loss(row):
         if row['team1_points'] > row['team2_points']:
             return 'w'
@@ -15,9 +15,10 @@ def create_data(year):
 
     schedules, _ = fetch_boxscore_data(year)
 
-    df = create_matchup_data(schedules)
-    df.columns = df.columns.str.lower()
-    df = df.loc[df['team2_points'] > 0].copy()
+    data = create_matchup_data(schedules)
+
+    data.columns = data.columns.str.lower()
+    df = data.loc[data['team2_points'] > 0].copy()
 
     teams = team_id_name(year)
     teams = {str(k): v for k, v in teams.items()}
@@ -27,38 +28,40 @@ def create_data(year):
 
     df['win/loss'] = df.apply(win_loss, axis=1)
 
-    df['opp_cum_pts'] = df.groupby('team2_id')['team2_points'].cumsum()
-    df['opp_cum_weeks'] = df.groupby('team2_id').cumcount() + 1
+    df['opp_cum_pts'] = df.apply(
+        lambda row: df[
+            (df['team2_id'] == row['team2_id']) &
+            (df['matchup_period'] < row['matchup_period'])
+            ]['team2_points'].sum(),
+        axis=1
+    )
+    df['opp_cum_weeks'] = df.groupby('team2_id').cumcount()
     df['opp_cum_avg_pts'] = df['opp_cum_pts'] / df['opp_cum_weeks']
-
-    # avg_mapping = df.groupby('team2_id')['team2_points'].mean().reset_index()
-    # avg_mapping = avg_mapping.rename(columns={'team2_points': 'opp_total_avg'})
-    # avg_mapping = avg_mapping[['team2_id', 'opp_total_avg']]
-    # df = pd.merge(left=df, right=avg_mapping, how='left', on='team2_id')
-
-    df = df.drop(columns=['opp_cum_pts', 'opp_cum_weeks'])
-
     df['opp_avg_diff'] = df['team2_points'] - df['opp_cum_avg_pts']
 
-    df = df.loc[df['opp_avg_diff'] != 0]
+    # filtered = df.loc[df['team2_id'] == '2']
+    # print(filtered.to_string())
 
     return df
 
 
 def create_chart(data, year):
-    data['color'] = data['win/loss'].map({'w': 'darkgreen', 'l': 'darkred'})
+    df = data.loc[data['opp_avg_diff'] != 0].copy()
 
-    data['x_group'] = data['team1_name'] + ' - Week ' + data['matchup_period'].astype(str)
+    df = df[np.isfinite(df['opp_avg_diff']) & df['opp_avg_diff'].notna()]
+    df['color'] = df['win/loss'].map({'w': 'darkgreen', 'l': 'darkred'})
 
-    data = data.sort_values(by=['team1_name', 'matchup_period'])
+    df['x_group'] = df['team1_name'] + ' - Week ' + df['matchup_period'].astype(str)
 
-    team_boundaries = data.groupby('team1_name').size().cumsum().values
+    df = df.sort_values(by=['team1_name', 'matchup_period'])
+
+    team_boundaries = df.groupby('team1_name').size().cumsum().values
 
     plt.figure(figsize=(14, 8))
 
-    bars = plt.bar(data['x_group'], data['opp_avg_diff'], color=data['color'])
+    bars = plt.bar(df['x_group'], df['opp_avg_diff'], color=df['color'])
 
-    for bar, value in zip(bars, data['opp_avg_diff']):
+    for bar, value in zip(bars, df['opp_avg_diff']):
         y_pos = bar.get_height() + 2 if value > 0 else bar.get_height() - 4
         plt.text(bar.get_x() + bar.get_width() / 2, y_pos, f'{value:.1f}',
                  ha='center', va='bottom', fontsize=6, color='black', rotation=90)
@@ -85,19 +88,26 @@ def create_chart(data, year):
 def summarize_data(data: pd.DataFrame, year):
     df = data.drop_duplicates('team1_name')['team1_name']
 
-    data = data.loc[data['opp_avg_diff'] > 0]
-    count = data.groupby('team1_name').size().reset_index(name='count')
-    avg = data.groupby('team1_name')['opp_avg_diff'].mean().reset_index(name='average')
+    data_above = data.loc[data['opp_avg_diff'] > 0]
+    count_above = data_above.groupby('team1_name').size().reset_index(name='weeks_above_avg')
+    avg_above = data_above.groupby('team1_name')['opp_avg_diff'].mean().reset_index(name='avg_above_avg')
 
-    df = pd.merge(left=df, right=count, how='left', on='team1_name')
-    df = pd.merge(left=df, right=avg, how='left', on='team1_name')
-    df['total'] = df['count'] * df['average']
-    df = df.sort_values(by='total', ascending=False)
+    data_below = data.loc[data['opp_avg_diff'] < 0]
+    count_below = data_below.groupby('team1_name').size().reset_index(name='weeks_below_avg')
+    avg_below = data_below.groupby('team1_name')['opp_avg_diff'].mean().reset_index(name='avg_below_avg')
+
+    df = pd.merge(left=df, right=count_above, how='left', on='team1_name')
+    df = pd.merge(left=df, right=avg_above, how='left', on='team1_name')
+    df['total_above'] = df['weeks_above_avg'] * df['avg_above_avg']
+
+    df = pd.merge(left=df, right=count_below, how='left', on='team1_name')
+    df = pd.merge(left=df, right=avg_below, how='left', on='team1_name')
+    df['total_below'] = df['weeks_below_avg'] * df['avg_below_avg']
+
+    df = df.sort_values(by='total_above', ascending=False)
     df = df.rename(columns={'team1_name': 'team'})
     df.index = df['team']
     df = df.drop(columns='team')
-
-    print(df)
 
     dfi.export(df, f'../Outputs/13-year_{year}_score_above_avg.png')
 
@@ -105,5 +115,6 @@ def summarize_data(data: pd.DataFrame, year):
 y = 2024
 d = create_data(y)
 print(d.to_string())
+d.to_csv('../Outputs/Testing/score_above_avg_2024.csv')
 summarize_data(d, y)
-create_chart(d, y)
+# create_chart(d, y)
