@@ -104,17 +104,22 @@ def summarize_data(data: pd.DataFrame, year):
     df = pd.merge(left=df, right=avg_below, how='left', on='team1_name')
     df['total_below'] = df['weeks_below_avg'] * df['avg_below_avg']
 
-    df = df.sort_values(by='total_above', ascending=False)
+    df['above/below_total'] = df['total_above'] + df['total_below']
+
+    df = df.sort_values(by='above/below_total', ascending=False)
     df = df.rename(columns={'team1_name': 'team'})
     df.index = df['team']
     df = df.drop(columns='team')
 
     dfi.export(df, f'../Outputs/13-year_{year}_score_above_avg.png')
 
+    return df
+
 
 y = 2024
 d = create_data(y)
 print(d.to_string())
 d.to_csv('../Outputs/Testing/score_above_avg_2024.csv')
-summarize_data(d, y)
-# create_chart(d, y)
+s = summarize_data(d, y)
+print(s.to_string())
+create_chart(d, y)

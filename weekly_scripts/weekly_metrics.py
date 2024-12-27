@@ -534,8 +534,8 @@ def print_and_save_charts(data, max_week=14, week_current=1):
 if __name__ == '__main__':
     year = 2024
     # run the charts
-    week_max = 11  # set a max week (e.g. use 14 to only see regular season) **max 17**
-    current_week = 11  # set current week to use on charts that are specific to a single week **max 17**
+    week_max = 15  # set a max week (e.g. use 14 to only see regular season) **max 17**
+    current_week = 15  # set current week to use on charts that are specific to a single week **max 17**
 
     # get data and create df
     schedule_data, teams = fetch_boxscore_data(year)

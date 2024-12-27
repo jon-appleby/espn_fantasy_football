@@ -172,7 +172,7 @@ def chart_injuries(data, max_week_num):
 
 if __name__ == '__main__':
     season = 2024
-    max_week = 11  # replace with current week, or set to 14 for full season
+    max_week = 15  # replace with current week, or set to 14 for full season
 
     teams = team_id_name(season)
 
