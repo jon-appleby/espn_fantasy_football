@@ -65,7 +65,7 @@ def chart_draft_v_rank(d):
     plt.show()
 
 
-def predict_rank(d, curr_year):
+def predict_rank(d, curr_year, draft_pos):
     print('\npredicting ranks based on draft pos')
 
     train_df = d.loc[d['year'] < curr_year]
@@ -80,20 +80,7 @@ def predict_rank(d, curr_year):
     # y_test = test_df['rank']
 
     # create dataframe of 2024 draft
-    draft_pos = pd.DataFrame([{'draft_pos': 1, 'team_id': 8},
-                              {'draft_pos': 2, 'team_id': 12},
-                              {'draft_pos': 3, 'team_id': 5},
-                              {'draft_pos': 4, 'team_id': 10},
-                              {'draft_pos': 5, 'team_id': 9},
-                              {'draft_pos': 6, 'team_id': 1},
-                              {'draft_pos': 7, 'team_id': 4},
-                              {'draft_pos': 8, 'team_id': 7},
-                              {'draft_pos': 9, 'team_id': 3},
-                              {'draft_pos': 10, 'team_id': 6},
-                              {'draft_pos': 11, 'team_id': 2},
-                              {'draft_pos': 12, 'team_id': 11},
-                              ]
-                             )
+    draft_pos = pd.DataFrame(draft_pos)
 
     # create and fit model using training data
     model = RandomForestRegressor(n_estimators=200, random_state=42)
@@ -117,14 +104,27 @@ def predict_rank(d, curr_year):
 
 
 if __name__ == '__main__':
-    year_end = 2023
+    year_end = 2024
     year_start = 2018
-    current_year = 2024
+    current_year = 2025
+    current_draft_pos = [
+        {'draft_pos': 1, 'team_id': 9},
+        {'draft_pos': 2, 'team_id': 2},
+        {'draft_pos': 3, 'team_id': 11},
+        {'draft_pos': 4, 'team_id': 1},
+        {'draft_pos': 5, 'team_id': 5},
+        {'draft_pos': 6, 'team_id': 8},
+        {'draft_pos': 7, 'team_id': 12},
+        {'draft_pos': 8, 'team_id': 4},
+        {'draft_pos': 9, 'team_id': 3},
+        {'draft_pos': 10, 'team_id': 10},
+        {'draft_pos': 11, 'team_id': 7},
+        {'draft_pos': 12, 'team_id': 6},
+    ]
 
     # data = iterate_thru_years(min_year=year_start, max_year=year_end)
 
     """replace above 'data' with below file after running to save on API calls"""
-    data = pd.read_csv('../Outputs/historical_draft_data_2018-2023.csv')
+    data = pd.read_csv('../Outputs/historical_draft_data_2018-2024.csv')
     chart_draft_v_rank(data)
-    predict_rank(data, curr_year=current_year)
-
+    predict_rank(data, curr_year=current_year, draft_pos=current_draft_pos)

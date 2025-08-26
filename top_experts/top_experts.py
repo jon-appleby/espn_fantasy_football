@@ -33,10 +33,15 @@ for group, dfs in df_dict.items():
     start_df[['Rank', 'QB', 'RB', 'WR', 'TE', 'K', 'DST', 'IDP']] = (
         start_df[['Rank', 'QB', 'RB', 'WR', 'TE', 'K', 'DST', 'IDP']].astype(int)
     )
+
     start_df['num_years'] = 1
 
     # create new df of only experts
     df = start_df['expert'].drop_duplicates().rename('expert').to_frame()
+
+    # add year fields
+    df['data_years'] = data_years
+    df['current_year'] = current_year
 
     # get max year
     max_years = start_df.groupby('expert')['max_year'].max().reset_index()
@@ -51,7 +56,7 @@ for group, dfs in df_dict.items():
     df = pd.merge(left=df, right=num_years, on='expert', how='left')
 
     # get rank
-    rank = start_df.groupby('expert')['Rank'].sum().reset_index().rename(columns={'Rank': 'rank'})
+    rank = start_df.groupby('expert')['Rank'].sum().reset_index().rename(columns={'Rank': 'rank_sum'})
     df = pd.merge(left=df, right=rank, on='expert', how='left')
 
     # remove invalid / NaN
@@ -62,14 +67,14 @@ for group, dfs in df_dict.items():
 
     # add extra fields and sort
     df['less_years'] = df['num_years'] - data_years
-    df['avg_rank_by_year'] = df['rank'] / df['num_years']
+    df['avg_rank_by_year'] = df['rank_sum'] / df['num_years']
 
     # filter df
     if group == 'in_season':
         final_df = df.loc[
             (df['num_years'] > 2)  # has at least 3 years of rankings
             &
-            (df['max_year'] > (current_year-1))  # has rankings from the previous year
+            (df['max_year'] >= (current_year-1))  # has rankings from the previous year
             &
             (df['rank'] > 0)
         ].reset_index().drop(columns='index')
