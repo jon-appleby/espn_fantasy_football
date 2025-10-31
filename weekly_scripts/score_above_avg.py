@@ -4,6 +4,7 @@ import numpy as np
 import dataframe_image as dfi
 from weekly_metrics import fetch_boxscore_data, create_matchup_data
 from main.team_mapping import team_id_name
+from main.espn_api import fetch_api_data
 
 
 def create_data(year):
@@ -98,10 +99,12 @@ def summarize_data(data: pd.DataFrame, year):
 
     df = pd.merge(left=df, right=count_above, how='left', on='team1_name')
     df = pd.merge(left=df, right=avg_above, how='left', on='team1_name')
+    df = df.fillna(0)
     df['total_above'] = df['weeks_above_avg'] * df['avg_above_avg']
 
     df = pd.merge(left=df, right=count_below, how='left', on='team1_name')
     df = pd.merge(left=df, right=avg_below, how='left', on='team1_name')
+    df = df.fillna(0)
     df['total_below'] = df['weeks_below_avg'] * df['avg_below_avg']
 
     df['above/below_total'] = df['total_above'] + df['total_below']
@@ -111,15 +114,22 @@ def summarize_data(data: pd.DataFrame, year):
     df.index = df['team']
     df = df.drop(columns='team')
 
-    dfi.export(df, f'../Outputs/13-year_{year}_score_above_avg.png')
+    # get current rank
+    ranks = fetch_api_data(views=['mTeam'], year=2025)
+    team_ranks = {team['name']: team['currentProjectedRank'] for team in ranks['teams']}
+    df = df.reset_index()
+    df['rank'] = df['team'].map(team_ranks)
+
+    dfi.export(df, f'../Outputs/13-year_{year}_score_above_avg.png', table_conversion='matplotlib')
 
     return df
 
 
-y = 2024
+y = 2025
+w = 8
 d = create_data(y)
 print(d.to_string())
-d.to_csv('../Outputs/Testing/score_above_avg_2024.csv')
+d.to_csv(f'../Outputs/Testing/score_above_avg_{y}.csv')
 s = summarize_data(d, y)
 print(s.to_string())
 create_chart(d, y)

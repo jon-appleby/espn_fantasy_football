@@ -15,7 +15,9 @@ For seasons <= 2017: https://fantasy.espn.com/apis/v3/games/ffl/leagueHistory/{l
     mBoxscore
     mMatchupScore
     kona_player_info
+    kona_playercard <- mirrors espn ui when clicking a player
     player_wl
+    players_wl
     mSchedule
     mScoreboard
     mTransactions2
@@ -38,8 +40,7 @@ Matplotlib colormaps (cmap='viridis'): https://matplotlib.org/stable/tutorials/c
 - Injured *starting* players (not sure on this)
 - Number of times played against player's best week
 
-# Team ID / Team Name
-team_id	team_name
+# Team ID / Owner
 1	Jared
 2	Lucas
 3	Prem
@@ -52,6 +53,20 @@ team_id	team_name
 10	Mitch B
 11	Mitch P
 12	Matt
+
+# Team Name / Owner (2025)
+Tipsy   Jared
+Hej Hej Lucas
+Glizzy  Prem
+Falco   Cole
+Coach   Palak
+Wiener  Jon
+Nacua   Austin
+Rectum  Chris
+CeeDee  Casey
+Trash   Mitch B
+Dude    Mitch P
+Gargle  Matt
 
 https://gist.github.com/nntrn/ee26cb2a0716de0947a0a4e9a157bc1c
 
