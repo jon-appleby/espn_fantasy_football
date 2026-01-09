@@ -126,7 +126,7 @@ def summarize_data(data: pd.DataFrame, year):
 
 
 y = 2025
-w = 8
+w = 17
 d = create_data(y)
 print(d.to_string())
 d.to_csv(f'../Outputs/Testing/score_above_avg_{y}.csv')

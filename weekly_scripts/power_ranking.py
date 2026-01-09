@@ -115,8 +115,6 @@ def summarize_teams(data, year, week) -> pd.DataFrame:
             0.2 * df['projection'] * df['total_value']
     )
 
-    print(df.to_string())
-
     # aggregate FY projection, YTD-based projections, and player value
     df = df.groupby('owner').agg({
         'projection': 'sum',
@@ -131,10 +129,12 @@ def summarize_teams(data, year, week) -> pd.DataFrame:
             0.2 * df['adj_value']  # adjusted player values
     )
 
-    df = df.sort_values(by='power_rank', ascending=False)
-
     df['week'] = week
     df['year'] = year
+
+    df = df.sort_values(by='power_rank', ascending=False)
+    df = df.reset_index().drop(columns='index')
+    df['rank'] = df.index + 1
 
     print(df.to_string())
     return df
@@ -186,8 +186,12 @@ def save_data(data: pd.DataFrame, week: int, year: int) -> None:
 
 
 if __name__ == '__main__':
+    """
+    this takes the full-year projections for each player, player points YTD, overall player value, etc. and 
+    scales forward to estimate full-season rankings for each team
+    """
     y = 2025
-    w = 8
+    w = 14
     d = get_player_data(y, w)
 
     # with open('../test/test_player_info.json', 'w') as f:
@@ -198,11 +202,3 @@ if __name__ == '__main__':
     save_data(t, w, y)
 
     # create_chart(t)
-
-    """
-    - based on the eyeball test it seems to be relatively accurate
-    - this takes the full-year projections for each player, player points YTD, overall player value, etc. and 
-    scales forward to estimate full-season rankings for each team
-    - the bar is your power rank score, the dot is the highest score between FY player projection, forecasted
-    projections, etc. (this could be based on projections for injured players, etc.)
-    """

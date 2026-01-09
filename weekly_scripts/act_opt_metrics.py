@@ -174,6 +174,7 @@ def chart_oae_pts(data_input, curr_week=1):
 
     actual_pt_color = 'teal'
     optimal_pt_color = 'gray'
+    espn_proj_color = 'purple'
     # Set up the figure and axes
     plt.figure(figsize=(10, 8))
     ax = sns.stripplot(data=data, x='actual_pts', y='team_name', marker='o', size=10, color=actual_pt_color)
@@ -185,6 +186,7 @@ def chart_oae_pts(data_input, curr_week=1):
     # Add dots at the end of the lines (optimal_pts and actual_pts)
     plt.scatter(data['optimal_pts'], range(len(data)), color=optimal_pt_color, marker='|', s=120, label='optimal_pts')
     plt.scatter(data['actual_pts'], range(len(data)), color=actual_pt_color, marker='o', s=120, label='actual_pts')
+    plt.scatter(data['espn_proj'], range(len(data)), color=espn_proj_color, marker='|', s=60, label='espn_proj')
 
     # Annotate actual_pts on the left and optimal_pts on the right
     for index, row in data.iterrows():
@@ -227,7 +229,7 @@ if __name__ == '__main__':
     structure = [1, 2, 2, 1, 1, 1, 1]
 
     season = 2025
-    week = 8
+    week = 17
 
     # https://fantasy.espn.com/apis/v3/games/ffl/seasons/2023/segments/0/leagues/REDACTED_LEAGUE_ID?view=mMatchup&view=mMatchupScore&scoringPeriodId=9&matchupPeriodId=9
     slate_data = get_slates(
