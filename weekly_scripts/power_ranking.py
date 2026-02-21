@@ -172,7 +172,7 @@ def create_chart(data: pd.DataFrame) -> None:
 
 
 def save_data(data: pd.DataFrame, week: int, year: int) -> None:
-    file = pd.read_excel('../Outputs/power_ranking.xlsx')
+    file = pd.read_excel('./Outputs/power_ranking.xlsx')
 
     merged = pd.merge(left=data, right=file[['owner', 'week', 'year']],
                       on=['owner', 'week', 'year'], how='left', indicator=True)
@@ -182,7 +182,7 @@ def save_data(data: pd.DataFrame, week: int, year: int) -> None:
 
     df = pd.concat([file, new_records]).sort_values(['week', 'year', 'power_rank'], ascending=False)
 
-    df.to_excel('../Outputs/power_ranking.xlsx', sheet_name='Sheet1', index=False)
+    df.to_excel('./Outputs/power_ranking.xlsx', sheet_name='Sheet1', index=False)
 
 
 if __name__ == '__main__':

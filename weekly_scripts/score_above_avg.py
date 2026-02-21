@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import dataframe_image as dfi
-from weekly_metrics import fetch_boxscore_data, create_matchup_data
+from weekly_scripts.weekly_metrics import fetch_boxscore_data, create_matchup_data
 from main.team_mapping import team_id_name
 from main.espn_api import fetch_api_data
 
@@ -82,7 +82,7 @@ def create_chart(data, year):
     ], loc='upper left')
 
     plt.tight_layout()
-    plt.savefig(f'../Outputs/12-year_{year}_score_above_avg.png', bbox_inches='tight')
+    plt.savefig(f'./Outputs/12-year_{year}_score_above_avg.png', bbox_inches='tight')
     plt.show()
 
 
@@ -120,16 +120,16 @@ def summarize_data(data: pd.DataFrame, year):
     df = df.reset_index()
     df['rank'] = df['team'].map(team_ranks)
 
-    dfi.export(df, f'../Outputs/13-year_{year}_score_above_avg.png', table_conversion='matplotlib')
+    dfi.export(df, f'./Outputs/13-year_{year}_score_above_avg.png', table_conversion='matplotlib')
 
     return df
 
-
-y = 2025
-w = 17
-d = create_data(y)
-print(d.to_string())
-d.to_csv(f'../Outputs/Testing/score_above_avg_{y}.csv')
-s = summarize_data(d, y)
-print(s.to_string())
-create_chart(d, y)
+if __name__ == '__main__':
+    y = 2025
+    w = 17
+    d = create_data(y)
+    print(d.to_string())
+    d.to_csv(f'../Outputs/Testing/score_above_avg_{y}.csv')
+    s = summarize_data(d, y)
+    print(s.to_string())
+    create_chart(d, y)

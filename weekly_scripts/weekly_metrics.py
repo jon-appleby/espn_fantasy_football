@@ -466,8 +466,11 @@ def curr_matchup_chart(data, curr_week, path=None):
     y_pt = data['opp_pts_v_avg']
     label = data['team_name']
     # Replace values in the 'win' column using .loc
-    data.loc[data['win'] == 1, 'win'] = 'win'
-    data.loc[data['win'] == 0, 'win'] = 'loss'
+    print('-------------------')
+    print(data.info())
+    print(data.describe())
+    print(data.head().to_string())
+    data['win'] = data['win'].replace({1: 'win', 0: 'loss'}).astype('string')
 
     sns.scatterplot(data=data, x=x_pt, y=y_pt,
                     hue='win',
@@ -520,15 +523,15 @@ def curr_matchup_chart(data, curr_week, path=None):
 
 
 def print_and_save_charts(data, max_week=14, week_current=1):
-    chart_draft_pos_rank(data, max_week, f'../outputs/1-pos_to_rank_max{max_week}.png')
-    chart_draft_vs_final(data, max_week, f'../outputs/2-diff_draft_to_final_max{max_week}.png')
-    chart_week_avg(data, max_week, f'../outputs/3-weekly_avg_scores_max{max_week}.png')
-    chart_all_play(data, max_week, f'../outputs/4-all_play_wins{max_week}.png')
-    chart_team_median(data, max_week, f'../outputs/5-median_scores_max{max_week}.png')
-    # chart_team_opp_density(data, max_week, f'../outputs/6-score_against_opp_density_max{max_week}.png')
-    chart_power_rank_by_week(full_data, max_week, f'../outputs/7-power_ranking_by_week_max{max_week}.png')
-    curr_powerrank_vs_rank(data, week_current, f'../outputs/8-week{week_current}_power_ranking.png')
-    curr_matchup_chart(data, week_current, f'../outputs/9-week{week_current}_matchup_chart.png')
+    chart_draft_pos_rank(data, max_week, f'./Outputs/1-pos_to_rank_max{max_week}.png')
+    chart_draft_vs_final(data, max_week, f'./Outputs/2-diff_draft_to_final_max{max_week}.png')
+    chart_week_avg(data, max_week, f'./Outputs/3-weekly_avg_scores_max{max_week}.png')
+    chart_all_play(data, max_week, f'./Outputs/4-all_play_wins{max_week}.png')
+    chart_team_median(data, max_week, f'./Outputs/5-median_scores_max{max_week}.png')
+    # chart_team_opp_density(data, max_week, f'./Outputs/6-score_against_opp_density_max{max_week}.png')
+    chart_power_rank_by_week(data, max_week, f'./Outputs/7-power_ranking_by_week_max{max_week}.png')
+    curr_powerrank_vs_rank(data, week_current, f'./Outputs/8-week{week_current}_power_ranking.png')
+    curr_matchup_chart(data, week_current, f'./Outputs/9-week{week_current}_matchup_chart.png')
 
 
 if __name__ == '__main__':
@@ -547,4 +550,4 @@ if __name__ == '__main__':
 
     # prints for testing
     print(full_data.head(24).sort_values(by='team_id').to_string())
-    full_data.to_excel('../outputs/weekly_score_data.xlsx', index=False)
+    full_data.to_excel('./Outputs/weekly_score_data.xlsx', index=False)

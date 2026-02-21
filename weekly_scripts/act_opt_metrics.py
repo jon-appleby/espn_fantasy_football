@@ -216,7 +216,7 @@ def chart_oae_pts(data_input, curr_week=1):
     # Add legend
     plt.legend()
 
-    plt.savefig(f'../outputs/10-week{curr_week}_actual_vs_optimal.png', bbox_inches='tight')
+    plt.savefig(f'./outputs/10-week{curr_week}_actual_vs_optimal.png', bbox_inches='tight')
 
     plt.show()
 
