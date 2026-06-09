@@ -31,13 +31,22 @@ The approach here uses similar techniques to professional BI and analytics work:
 * Visual storytelling with charts
 
 ## Setup & Execution
-Create a local .env file, or set the same values as Windows environment variables.
+This project requires ESPN authentication for private fantasy leagues. These values should be 
+stored locally in a .env file, or set as Windows enrivonment variables.
 
-| Variable       | Description            |
-|----------------|------------------------|
-| ESPN_LEAGUE_ID | ESPN fantasy league ID |
-| ESPN_SWID      | ESPN SWID cookie       |
-| ESPN_S2        | ESPN_S2 cookie         |
+To find your cookie values, log in to ESPN Fantasy Football in your browser and open
+the browser tools. In Firefox, go to the Storage tab and look for cookies named **espn_s2** 
+and **SWID**.
+
+To find your league ID, open your ESPN Fantasy league homepage and check the page URL. Look
+for a parameter similar to "leagueId=999999". Use the numeric value as ESPN_LEAGUE_ID.
+
+| Variable       | Description            | Example                             |
+|----------------|------------------------|-------------------------------------|
+| ESPN_LEAGUE_ID | ESPN fantasy league ID | 543987                              |
+| ESPN_SWID      | ESPN SWID cookie       | {123A51D-89AB-1234-Z987-1234GH5132} |
+| ESPN_S2        | ESPN_S2 cookie         | 'BAVKFxw89230f ... sSKMFasld29Sd'   |
+
 
 ### Running Weekly Report
 This creates weekly datasets and chart outputs in the outputs/ folder
