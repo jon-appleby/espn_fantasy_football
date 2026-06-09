@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from weekly_scripts.act_opt_metrics import get_slates
-from src.espn_api import fetch_api_data
+from src.espn_client import fetch_api_data
 from src.team_mapping import team_id_name
 
 
@@ -51,7 +51,7 @@ def nfl_injuries(year) -> pd.DataFrame:
 
     df = full_df.loc[full_df['position'].isin(['QB', 'WR', 'RB', 'TE'])]
 
-    df.to_excel('./Outputs/player_injuries.xlsx', index=False)
+    df.to_excel('../Outputs/player_injuries.xlsx', index=False)
 
     return df
 
@@ -121,7 +121,7 @@ def team_injuries(injuries, fantasy_data) -> pd.DataFrame:
 
     df['player_status_weight'] = df.apply(player_status_weight, axis=1)
 
-    df.to_excel('./Outputs/team_injuries.xlsx', index=False)
+    df.to_excel('../Outputs/team_injuries.xlsx', index=False)
 
     print(df.head().to_string())
 
@@ -162,7 +162,7 @@ def chart_injuries(data, max_week_num):
     plt.xticks(size=9, color='#737373')
     plt.yticks(size=9, color='#737373')
 
-    path = f'./Outputs/11-week_{max_week_num}_player_injuries.png'
+    path = f'../Outputs/11-week_{max_week_num}_player_injuries.png'
     plt.savefig(path, bbox_inches='tight')
 
     plt.tight_layout()
@@ -176,7 +176,7 @@ if __name__ == '__main__':
     teams = team_id_name(season)
 
     # injury status from NFL.com
-    # injured_players = pd.read_excel('./Outputs/player_injuries.xlsx')
+    # injured_players = pd.read_excel('../Outputs/player_injuries.xlsx')
     injured_players = nfl_injuries(year=season)
 
     # players from each fantasy team

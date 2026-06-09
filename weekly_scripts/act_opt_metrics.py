@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-from src.espn_api import fetch_api_data
+from src.espn_client import fetch_api_data
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -222,7 +222,7 @@ def chart_oae_pts(data_input, curr_week=1):
     # Add legend
     plt.legend()
 
-    plt.savefig(f'./outputs/10-week{curr_week}_actual_vs_optimal.png', bbox_inches='tight')
+    plt.savefig(f'../outputs/10-week{curr_week}_actual_vs_optimal.png', bbox_inches='tight')
 
     plt.show()
 

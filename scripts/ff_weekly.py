@@ -1,11 +1,11 @@
 import os
+from dotenv import load_dotenv
 
-from src.espn_api import fetch_api_data
+from src.espn_client import fetch_api_data
 from weekly_scripts.act_opt_metrics import compute_pts, get_team_info, chart_oae_pts, transform_data, get_slates
 from weekly_scripts.power_ranking import get_player_data, summarize_teams, save_data
 from weekly_scripts.score_above_avg import create_data, summarize_data, create_chart
 from weekly_scripts.weekly_metrics import fetch_boxscore_data, get_draftpos_rank, create_matchup_data, create_team_data, merge_transform_data, print_and_save_charts
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -14,7 +14,7 @@ positions = ['QB', 'RB', 'WR', 'Flex', 'TE', 'D/ST', 'K']
 structure = [1, 2, 2, 1, 1, 1, 1]
 
 season = 2025
-week = 17
+week = 8
 
 # ---------------- #
 # ACTUAL v OPTIMAL #
@@ -39,7 +39,7 @@ chart_oae_pts(transform_data(point_data, team_df), week)
 # SCORE ABOVE AVG #
 # --------------- #
 d = create_data(season)
-d.to_csv(f'./outputs/score_above_avg_{season}.csv')
+d.to_csv(f'../outputs/score_above_avg_{season}.csv')
 s = summarize_data(d, season)
 create_chart(d, season)
 

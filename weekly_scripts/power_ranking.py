@@ -2,7 +2,7 @@ from time import sleep
 import json
 import pandas as pd
 import matplotlib.pyplot as plt
-from src.espn_api import fetch_api_data
+from src.espn_client import fetch_api_data
 
 
 def get_player_data(year: int, week: int) -> dict:
@@ -171,7 +171,7 @@ def create_chart(data: pd.DataFrame) -> None:
 
 
 def save_data(data: pd.DataFrame, week: int, year: int) -> None:
-    file = pd.read_excel('./Outputs/power_ranking.xlsx')
+    file = pd.read_excel('../Outputs/power_ranking.xlsx')
 
     merged = pd.merge(left=data, right=file[['owner', 'week', 'year']],
                       on=['owner', 'week', 'year'], how='left', indicator=True)
@@ -181,7 +181,7 @@ def save_data(data: pd.DataFrame, week: int, year: int) -> None:
 
     df = pd.concat([file, new_records]).sort_values(['week', 'year', 'power_rank'], ascending=False)
 
-    df.to_excel('./Outputs/power_ranking.xlsx', sheet_name='Sheet1', index=False)
+    df.to_excel('../Outputs/power_ranking.xlsx', sheet_name='Sheet1', index=False)
 
 
 if __name__ == '__main__':

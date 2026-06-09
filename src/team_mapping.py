@@ -1,4 +1,4 @@
-from src.espn_api import fetch_api_data
+from src.espn_client import fetch_api_data
 
 team_id_user = {1: 'Jared',
                 2: 'Lucas',

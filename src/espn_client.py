@@ -1,6 +1,13 @@
-import requests
-from src.setup_info import SWID, ESPN_S2, LEAGUE_ID
+import os
 
+from dotenv import load_dotenv
+import requests
+
+load_dotenv()
+
+SWID = os.getenv('SWID')
+ESPN_S2 = os.getenv('ESPN_S2')
+LEAGUE_ID = os.getenv('LEAGUE_ID')
 COOKIES = {"SWID": SWID, "espn_s2": ESPN_S2}
 
 

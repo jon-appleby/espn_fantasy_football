@@ -1,4 +1,4 @@
-from src.espn_api import fetch_api_data
+from src.espn_client import fetch_api_data
 import matplotlib.pyplot as plt
 import pandas as pd
 from src.team_mapping import team_id_user
