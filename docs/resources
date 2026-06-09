@@ -32,41 +32,6 @@ https://gist.github.com/akeaswaran/b48b02f1c94f873c6655e7129910fc3b
 # ESPN API Github
 https://github.com/cwendt94/espn-api/blob/master/espn_api/requests/espn_requests.py#L122
 
-# Seaborn / Matplotlib #
-Matplotlib colormaps (cmap='viridis'): https://matplotlib.org/stable/tutorials/colors/colormaps.html
-
-# More metrics to create #
-- Highest win-loss margins (duplicate?)
-- Injured *starting* players (not sure on this)
-- Number of times played against player's best week
-
-# Team ID / Owner
-1	Jared
-2	Lucas
-3	Prem
-4	Cole
-5	Palak
-6	Jon
-7	Austin
-8	Chris
-9	Casey
-10	Mitch B
-11	Mitch P
-12	Matt
-
-# Team Name / Owner (2025)
-Tipsy   Jared
-Hej Hej Lucas
-Glizzy  Prem
-Falco   Cole
-Coach   Palak
-Wi Wa  Jon
-Nacua   Austin
-Rectum  Chris
-CeeDee  Casey
-Trash   Mitch B
-Dude    Mitch P
-Gargle  Matt
 
 https://gist.github.com/nntrn/ee26cb2a0716de0947a0a4e9a157bc1c
 

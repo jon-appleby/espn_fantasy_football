@@ -13,6 +13,19 @@ team_id_user = {1: 'Jared',
                 11: 'MitchP',
                 12: 'Matt'}
 
+# # Team Name / Owner (2025)
+# Tipsy     Jared
+# Hej       Lucas
+# Gliz      Prem
+# Falco     Cole
+# Coach     Palak
+# Wi Wa     Jon
+# Nacua     Austin
+# Rec       Chris
+# CeeDee    Casey
+# Trash     Mitch B
+# Dude      Mitch P
+# Garg      Matt
 
 def team_id_name(year=2024) -> dict[int: str]:
     """
