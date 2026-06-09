@@ -3,11 +3,10 @@ import numpy as np
 from time import sleep
 import matplotlib.pyplot as plt
 import seaborn as sns
-from adjustText import adjust_text
 
 from weekly_scripts.act_opt_metrics import get_slates
-from main.espn_api import fetch_api_data
-from main.team_mapping import team_id_name
+from src.espn_api import fetch_api_data
+from src.team_mapping import team_id_name
 
 
 def nfl_injuries(year) -> pd.DataFrame:

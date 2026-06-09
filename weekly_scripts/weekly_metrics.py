@@ -1,4 +1,4 @@
-from main.espn_api import fetch_api_data
+from src.espn_api import fetch_api_data
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -80,7 +80,7 @@ def create_team_data(team_for_dict):
 
 def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df):
     """
-    merge main data inputs, then create additional fields used later for plotting
+    merge src data inputs, then create additional fields used later for plotting
     """
     # merge the first 2 datasets
     combine_df = pd.merge(scores_for_df, teams_for_df, left_on='Team1_ID', right_on='Team_ID')
@@ -101,7 +101,7 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
     combine_df = pd.merge(combine_df, draft_for_df, left_on='team_id', right_on='team_id')
     combine_df = pd.merge(combine_df, rank_for_df, left_on='team_id', right_on='team_id')
 
-    # calculate league week avg, then merge into main df
+    # calculate league week avg, then merge into src df
     week_avg = combine_df.groupby(['matchup_period']).mean(numeric_only=True)['team_points']
     combine_df = pd.merge(combine_df, week_avg,
                           left_on='matchup_period',

@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 import dataframe_image as dfi
 from weekly_scripts.weekly_metrics import fetch_boxscore_data, create_matchup_data
-from main.team_mapping import team_id_name
-from main.espn_api import fetch_api_data
+from src.team_mapping import team_id_name
+from src.espn_api import fetch_api_data
 
 
 def create_data(year):

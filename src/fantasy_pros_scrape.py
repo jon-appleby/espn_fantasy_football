@@ -1,6 +1,6 @@
 from selenium import webdriver
 from time import sleep
-from main.setup_info import FP_USER, FP_PW
+from src.setup_info import FP_USER, FP_PW
 
 year = 2023
 week = 2
@@ -28,8 +28,8 @@ sleep(5)
 browser.find_element('xpath', '/html/body/div[2]/div[4]/div/div[1]/div[2]/div[2]/div[3]/div/button[1]/i').click()
 
 # todo: send user/pw info
-user = browser.find_element('xpath', '/html/body/main/section[2]/section/section/form/div[1]/div[1]/div')
+user = browser.find_element('xpath', '/html/body/src/section[2]/section/section/form/div[1]/div[1]/div')
 user.send_keys(FP_USER)
-pw = browser.find_element('xpath', '/html/body/main/section[2]/section/section/form/div[1]/div[2]/div')
+pw = browser.find_element('xpath', '/html/body/src/section[2]/section/section/form/div[1]/div[2]/div')
 pw.send_keys(FP_PW)
 

@@ -1,5 +1,5 @@
 import requests
-from main.setup_info import SWID, ESPN_S2, LEAGUE_ID
+from src.setup_info import SWID, ESPN_S2, LEAGUE_ID
 
 COOKIES = {"SWID": SWID, "espn_s2": ESPN_S2}
 

@@ -2,8 +2,7 @@ from time import sleep
 import json
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
-from main.espn_api import fetch_api_data
+from src.espn_api import fetch_api_data
 
 
 def get_player_data(year: int, week: int) -> dict:

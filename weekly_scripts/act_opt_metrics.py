@@ -1,9 +1,15 @@
-from main.espn_api import fetch_api_data
-from main.setup_info import SWID, ESPN_S2, LEAGUE_ID
-import requests
+import os
+from dotenv import load_dotenv
+
+from src.espn_api import fetch_api_data
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+load_dotenv()
+SWID = os.getenv("SWID")
+ESPN_S2 = os.getenv("ESPN_S2")
+LEAGUE_ID = os.getenv("LEAGUE_ID")
 
 
 def get_slates(data, week_num) -> dict[str: pd.DataFrame]:

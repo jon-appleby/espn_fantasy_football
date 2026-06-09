@@ -1,7 +1,7 @@
-from main.espn_api import fetch_api_data
+from src.espn_api import fetch_api_data
 import matplotlib.pyplot as plt
 import pandas as pd
-from main.team_mapping import team_id_user
+from src.team_mapping import team_id_user
 import time
 import seaborn as sns
 from sklearn.ensemble import RandomForestRegressor

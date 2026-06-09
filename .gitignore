@@ -1,2 +1,13 @@
-/main/setup_info.py
-/Outputs/
+# python
+.venv/
+__pycache__/
+*.pyc
+
+# env vars
+.env
+
+# local
+outputs/
+test/
+*.csv
+*.xlsx

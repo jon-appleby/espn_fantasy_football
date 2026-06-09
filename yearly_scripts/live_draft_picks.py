@@ -1,4 +1,4 @@
-from main.espn_api import fetch_api_data
+from src.espn_api import fetch_api_data
 import json
 import pandas as pd
 import xlwings as xw
