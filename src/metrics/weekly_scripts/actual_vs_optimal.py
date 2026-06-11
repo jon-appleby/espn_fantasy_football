@@ -1,10 +1,15 @@
 import os
+from typing import Any
+
 from dotenv import load_dotenv
 
-from src.espn_client import fetch_api_data
+from espn.espn_client import fetch_api_data
+from espn.constants import SLOT_CODES
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+from metrics.weekly_scripts.chart_utils import set_chart_theme
 
 load_dotenv()
 SWID = os.getenv("SWID")
@@ -12,26 +17,18 @@ ESPN_S2 = os.getenv("ESPN_S2")
 LEAGUE_ID = os.getenv("LEAGUE_ID")
 
 
-def get_slates(data, week_num) -> dict[str: pd.DataFrame]:
+def create_team_slates(data, week_num) -> dict[Any, Any]:
     """
     Constructs week team slates with slotted position,
     position, and points (actual and ESPN projected),
     given full matchup info (`get_matchups`)
-
-    :return dict containing team id: dataframe with slot (position, bench, or ir)
+    Args:
+        data: `dict` of `DataFrames`
+        week_num: `int`
+    Return:
+        dict containing team id: dataframe with slot (position, bench, or ir)
     """
 
-    slotcodes = {
-        0: 'QB', 1: 'QB',
-        2: 'RB', 3: 'RB',
-        4: 'WR', 5: 'WR',
-        6: 'TE', 7: 'TE',
-        16: 'D/ST',
-        17: 'K',
-        20: 'Bench',
-        21: 'IR',
-        23: 'Flex'
-    }
     slates = {}
 
     for team in data['teams']:
@@ -42,7 +39,7 @@ def get_slates(data, week_num) -> dict[str: pd.DataFrame]:
 
             # get actual lineup slot
             slotid = p['lineupSlotId']
-            slot = slotcodes[slotid]
+            slot = SLOT_CODES[slotid]
 
             # get projected and actual scores
             act, proj = 0, 0
@@ -78,8 +75,8 @@ def get_slates(data, week_num) -> dict[str: pd.DataFrame]:
     return slates
 
 
-def compute_pts(slates, posns, struc):
-    '''
+def calculate_lineup_points(slates, posns, struc):
+    """
     Given slates (`get_slates`), compute total roster pts:
     actual, optimal, and using ESPN projections
 
@@ -98,7 +95,7 @@ def compute_pts(slates, posns, struc):
     Returns
     --------------
     `dict` of `dict`s with actual, ESPN, optimal points
-    '''
+    """
 
     data = {}
     for tmid, slate in slates.items():
@@ -139,23 +136,7 @@ def compute_pts(slates, posns, struc):
     return data
 
 
-def get_team_info(year, league):
-    '''
-    get team name info and concat
-    '''
-
-    data = fetch_api_data(views=['mTeam'], year=year, league=league)
-
-    team_df_temp = [[
-        team_info['id'],
-        team_info['name']]
-        for team_info in data['teams']]
-    teams = pd.DataFrame(team_df_temp, columns=['id', 'team_name'])
-
-    return teams
-
-
-def transform_data(data, team):
+def create_lineup_efficiency(data, team):
     """
     get data and teams, merge and prepare data for use later
     """
@@ -172,8 +153,8 @@ def transform_data(data, team):
     return point_df
 
 
-def chart_oae_pts(data_input, curr_week=1):
-    sns.set_theme(style='darkgrid')
+def chart_actual_vs_optimal(data_input, curr_week=1):
+    set_chart_theme()
 
     # sort for chart
     data = data_input.sort_values(by='actual_pts', ascending=False)
@@ -215,39 +196,9 @@ def chart_oae_pts(data_input, curr_week=1):
     plt.yticks(size=9, color='#737373')
     plt.title(f'Actual vs Optimal Points - Week {curr_week}', size=10)
 
-    # add point labels
-    # text = [plt.text(x, y, f'{name}', fontdict={'size': 9, 'color': '#4d5478'})
-    #         for (x, y, name) in zip(x_pt, y_pt, label)]
-
     # Add legend
     plt.legend()
 
     plt.savefig(f'../outputs/10-week{curr_week}_actual_vs_optimal.png', bbox_inches='tight')
 
     plt.show()
-
-
-if __name__ == '__main__':
-    swid = SWID
-    espn = ESPN_S2
-    league_id = LEAGUE_ID
-    positions = ['QB', 'RB', 'WR', 'Flex', 'TE', 'D/ST', 'K']
-    structure = [1, 2, 2, 1, 1, 1, 1]
-
-    season = 2025
-    week = 17
-
-    # https://fantasy.espn.com/apis/v3/games/ffl/seasons/2023/segments/0/leagues/REDACTED_LEAGUE_ID?view=mMatchup&view=mMatchupScore&scoringPeriodId=9&matchupPeriodId=9
-    slate_data = get_slates(
-        fetch_api_data(views=['mMatchup', 'mMatchupScore'], year=season,
-                       params={'scoringPeriodId': week, 'matchupPeriodId': week}),
-        week_num=week
-    )
-    point_data = compute_pts(slate_data, positions, structure)
-    team_df = get_team_info(season, league_id)
-
-    # prints for testing
-    # print_output = transform_data(point_data, team_df)
-    # print(print_output.to_string())
-
-    chart_oae_pts(transform_data(point_data, team_df), week)

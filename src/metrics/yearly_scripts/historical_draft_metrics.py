@@ -1,7 +1,7 @@
-from src.espn_client import fetch_api_data
+from espn.espn_client import fetch_api_data
 import matplotlib.pyplot as plt
 import pandas as pd
-from src.team_mapping import team_id_user
+from espn.team_mapping import member_info_df
 import time
 import seaborn as sns
 from sklearn.ensemble import RandomForestRegressor
@@ -15,7 +15,7 @@ def iterate_thru_years(max_year, min_year=2018):
     while year <= max_year:
         print(f'getting data for {year}')
 
-        data = fetch_api_data(views=['mScoreboard', 'mSettings'], year=year, )
+        data = fetch_api_data(views=['mScoreboard', 'mSettings'], year=year)
 
         # iterate through the list and append to dict using index + 1 as team ID
         draft_list = []
@@ -122,9 +122,9 @@ if __name__ == '__main__':
         {'draft_pos': 12, 'team_id': 6},
     ]
 
-    # data = iterate_thru_years(min_year=year_start, max_year=year_end)
+    # d = iterate_thru_years(min_year=year_start, max_year=year_end)
 
     """replace above 'data' with below file after running to save on API calls"""
-    data = pd.read_csv('../Outputs/historical_draft_data_2018-2024.csv')
-    chart_draft_v_rank(data)
-    predict_rank(data, curr_year=current_year, draft_pos=current_draft_pos)
+    d = pd.read_csv('../outputs/historical_draft_data_2018-2024.csv')
+    chart_draft_v_rank(d)
+    predict_rank(d, curr_year=current_year, draft_pos=current_draft_pos)

@@ -11,7 +11,12 @@ LEAGUE_ID = os.getenv('LEAGUE_ID')
 COOKIES = {"SWID": SWID, "espn_s2": ESPN_S2}
 
 
-def fetch_api_data(views: list, year: int, header: dict = None, params: dict = None, league=LEAGUE_ID):
+def fetch_api_data(
+        views: list,
+        year: int,
+        header: dict = None,
+        params: dict = None
+):
     """
     pull data from ESPN API using the view & year requested. headers/params are optional
 
@@ -19,11 +24,10 @@ def fetch_api_data(views: list, year: int, header: dict = None, params: dict = N
     :param year: year to pull
     :param header: optional for additional control on limits/filtering
     :param params: optional for additional filtering
-    :param league: league ID, defaults to my league
     :return: data from api in json format
     """
 
-    url = f'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/leagues/{league}?'
+    url = f'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/leagues/{LEAGUE_ID}?'
 
     count = 0
     for v in views:
@@ -64,7 +68,7 @@ def fetch_transactions(year):
 
 if __name__ == '__main__':
     print('\nfetch_api_data')
-    print(fetch_api_data(['mMatchup'], 2023, league=REDACTED_LEAGUE_ID))
+    print(fetch_api_data(['mMatchup'], 2023))
 
     print('\nfetch_transactions')
     print(fetch_transactions( 2023))

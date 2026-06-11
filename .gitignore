@@ -9,5 +9,6 @@ __pycache__/
 # local
 outputs/
 test/
+top_experts/input/
 *.csv
 *.xlsx

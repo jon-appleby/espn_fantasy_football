@@ -1,4 +1,4 @@
-from src.espn_client import fetch_api_data
+from espn.espn_client import fetch_api_data
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -6,6 +6,8 @@ import matplotlib.ticker as plticker
 import seaborn as sns
 import numpy as np
 from adjustText import adjust_text
+
+from metrics.weekly_scripts.chart_utils import get_output_path, save_chart, set_chart_theme
 
 
 def fetch_boxscore_data(curr_year):
@@ -28,7 +30,7 @@ def get_draftpos_rank(curr_year):
     rank_list = []
     team_list = rank_data['teams']
     for team in team_list:
-        rank = team['currentProjectedRank']
+        rank = team['rankCalculatedFinal']
         team_id = team['id']
         rank_list.append({'rank': rank, 'team_id': str(team_id)})
 
@@ -184,7 +186,8 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
 def chart_draft_pos_rank(data, week, path=None):
     """ charts the draft position vs the current position through max_weeks """
 
-    sns.set_theme(style='darkgrid', palette=None)
+    set_chart_theme()
+
     data = data.loc[data['matchup_period'] <= week]
 
     # compare draft pos to rank
@@ -195,50 +198,86 @@ def chart_draft_pos_rank(data, week, path=None):
 
     pos_rank.invert_yaxis()
 
-    plt.tight_layout()
-    if path:
-        plt.savefig(path, bbox_inches='tight')
-    plt.show()
+    save_chart(path)
 
 
 def chart_draft_vs_final(data, week, path=None):
-    sns.set_theme(style='darkgrid', palette=None)
-    data = data.loc[data['matchup_period'] <= week]
+    set_chart_theme()
 
-    # visualize where each player moved through the year from draft to final rank
-    diff_data = data.groupby(by=['team_name',
-                                 'draft_pos'])['draft_rank_diff'].min().reset_index().sort_values(by=['draft_pos'])
-    color_map = mcolors.LinearSegmentedColormap.from_list("CustomMap", ['#d4382c', '#deaa3a', '#0fa32c'])
-    min_diff = min(diff_data['draft_rank_diff'])
-    max_diff = max(diff_data['draft_rank_diff'])
-    midpoint = 0
-    norm = mcolors.TwoSlopeNorm(vmin=min_diff, vcenter=midpoint, vmax=max_diff)
-    sns.barplot(data=diff_data,
-                x='draft_rank_diff',
-                y='team_name',
-                palette=color_map(norm(diff_data['draft_rank_diff'])))
-    plt.tight_layout()
-    if path:
-        plt.savefig(path, bbox_inches='tight')
-    plt.show()
+    data = data.loc[data['matchup_period'] <= week].copy()
+
+    diff_data = (
+        data.groupby(by=['team_name', 'draft_pos'])['draft_rank_diff']
+        .min()
+        .reset_index()
+        .sort_values(by='draft_pos')
+    )
+
+    if diff_data.empty:
+        print('No draft vs final data available to chart.')
+        return
+
+    color_map = mcolors.LinearSegmentedColormap.from_list(
+        'CustomMap',
+        ['#d4382c', '#deaa3a', '#0fa32c']
+    )
+
+    values = diff_data['draft_rank_diff'].to_numpy()
+    max_abs = max(np.nanmax(np.abs(values)), 1)
+
+    norm = mcolors.TwoSlopeNorm(
+        vmin=-max_abs,
+        vcenter=0,
+        vmax=max_abs
+    )
+
+    colors = [
+        mcolors.to_hex(c)
+        for c in color_map(norm(values))
+    ]
+
+    palette = dict(zip(diff_data['team_name'], colors))
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    sns.barplot(
+        data=diff_data,
+        x='draft_rank_diff',
+        y='team_name',
+        hue='team_name',
+        palette=palette,
+        legend=False,
+        dodge=False,
+        ax=ax
+    )
+
+    ax.axvline(0, color='black', linewidth=0.8)
+
+    ax.set_title(f'Draft Position vs Final Rank - Weeks 1-{week}', fontsize=10)
+    ax.set_xlabel('Draft rank diff: positive = improved, negative = fell', fontsize=9)
+    ax.set_ylabel('Team', fontsize=9)
+
+    ax.tick_params(axis='both', labelsize=8)
+
+    save_chart(path, fig=fig)
 
 
 def chart_week_avg(data, week, path=None):
-    sns.set_theme(style='darkgrid', palette=None)
+    set_chart_theme()
+
     data = data.loc[data['matchup_period'] <= week]
     # scores week by week
     sns.regplot(data=data,
                 x='matchup_period',
                 y='week_avg').set(title=f'Weekly Avg Score for weeks '
                                         f'{min(data["matchup_period"])}-{max(data["matchup_period"])}')
-    plt.tight_layout()
-    if path:
-        plt.savefig(path, bbox_inches='tight')
-    plt.show()
+
+    save_chart(path)
 
 
 def chart_all_play(data, week, path=None):
-    sns.set_theme(style='darkgrid', palette=None)
+    set_chart_theme()
+
     data = data.loc[data['matchup_period'] <= week]
 
     # all play win count, ratio, and actual ratio
@@ -287,126 +326,155 @@ def chart_all_play(data, week, path=None):
     plt.xticks([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
                ['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%'])
 
-    plt.tight_layout()
-    if path:
-        plt.savefig(path)
-    plt.show()
+    save_chart(path)
 
 
 def chart_team_median(data, week, path=None):
-    sns.set_theme(style='darkgrid', palette=None)
-    data = data.loc[data['matchup_period'] <= week]
-    # create boxplot
-    box_chart_order = data.groupby(
-        by=['team_name'])['team_points'].median().sort_values(ascending=False).index.to_list()
+    set_chart_theme()
 
-    sns.boxplot(data=data,
-                x='team_name',
-                y='team_points',
-                order=box_chart_order  # set descending based on median of total score
-                ).set(title=f'Median scores for weeks '
-                            f'{min(data["matchup_period"])}-{max(data["matchup_period"])}')  # set title
-    plt.xticks(rotation=90)
-    label_y = 50  # Adjust this value to position the label
-    for team_name in box_chart_order:
-        rank = data[data['team_name'] == team_name]['rank'].values[0]
-        plt.text(box_chart_order.index(team_name),
-                 label_y,
-                 rank,
-                 ha='center', va='bottom')
-    plt.tight_layout()
-    if path:
-        plt.savefig(path, bbox_inches='tight')
-    plt.show()
+    data = data.loc[data['matchup_period'] <= week].copy()
+
+    box_chart_order = (
+        data.groupby('team_name')['team_points']
+        .median()
+        .sort_values(ascending=False)
+        .index
+        .to_list()
+    )
+
+    rank_map = (
+        data.drop_duplicates('team_name')
+        .set_index('team_name')['rank']
+        .to_dict()
+    )
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    sns.boxplot(
+        data=data,
+        x='team_name',
+        y='team_points',
+        order=box_chart_order,
+        ax=ax
+    )
+
+    ax.set_title(
+        f'Median scores for weeks {min(data["matchup_period"])}-{max(data["matchup_period"])}',
+        fontsize=10
+    )
+
+    ax.set_xlabel('Team')
+    ax.set_ylabel('Team Points')
+
+    labels = [
+        f'{team}\nRank {int(rank_map[team])}'
+        for team in box_chart_order
+    ]
+
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels, rotation=45, ha='right', fontsize=8)
+
+    save_chart(path, fig=fig)
 
 
 def chart_team_opp_density(data, week, path=None):
-    sns.set_theme(style='darkgrid', palette=None)
+    set_chart_theme()
+
     data = data.loc[data['matchup_period'] <= week]
+
     # team vs opponents
     grid = sns.FacetGrid(data, col='team_name', col_wrap=4)
+
     grid.map_dataframe(sns.kdeplot, y='opp_points', x='team_points', fill=True, cmap='magma')
     grid.set_axis_labels(y_var='Opponent Points', x_var='Team Points')
     grid.set_titles(col_template='{col_name} Point Density')
+
     plt.tight_layout()
-    if path:
-        plt.savefig(path, bbox_inches='tight')
-    plt.show()
+
+    save_chart(path)
 
 
 def chart_power_rank_by_week(data, week, path=None):
-    sns.set_theme(style='darkgrid', palette=None)
+    set_chart_theme()
 
-    # Filter to only records in time period
-    data = data.loc[data['matchup_period'] <= week]
+    data = data.loc[data['matchup_period'] <= week].copy()
 
-    x_pt = data['matchup_period']
-    y_pt = data['power_rank_ytd_asrank']
-    label = data['team_name']
+    custom_palette = [
+        '#74aecc', '#0f78bf', '#b2df8a', '#33a02c',
+        '#fb9a99', '#e31a1c', '#bd8844', '#ff7f00',
+        '#be94d4', '#6a3d9a', '#c7c775', '#b15928'
+    ]
 
-    fig, ax = plt.subplots()
+    team_order = sorted(data['team_name'].unique())
+    color_map = dict(zip(team_order, custom_palette))
 
-    custom_palette = ['#74aecc', '#0f78bf', '#b2df8a', '#33a02c',
-                      '#fb9a99', '#e31a1c', '#bd8844', '#ff7f00',
-                      '#be94d4', '#6a3d9a', '#c7c775', '#b15928']
+    fig, ax = plt.subplots(figsize=(8, 5))
 
-    # Plot the lineplot
-    plot = sns.lineplot(data=data, x=x_pt, y=y_pt,
-                        hue=label, palette=custom_palette,
-                        linewidth=3,
-                        markers=True, marker='o', markersize=7)
+    plot = sns.lineplot(
+        data=data,
+        x='matchup_period',
+        y='power_rank_ytd_asrank',
+        hue='team_name',
+        hue_order=team_order,
+        palette=color_map,
+        linewidth=3,
+        marker='o',
+        markersize=7,
+        ax=ax
+    )
 
-    # set labels at end of lines
-    for line, name in zip(ax.lines, label.tolist()):
-        if len(line.get_ydata()) == 0:
-            continue
+    ax.set_xlim(0.5, data['matchup_period'].max() + 0.5)
+    ax.set_xlabel('Week', size=9)
+    ax.set_ylabel('Power Rank', size=9)
+    ax.set_title(f'Power Rank by Week thru {week}', size=10)
 
-        y = line.get_ydata()[-1]
-        x = line.get_xdata()[-1]
+    ax.tick_params(axis='both', labelsize=9, colors='#737373')
+    ax.xaxis.set_major_locator(plticker.MultipleLocator(base=1.0))
+    ax.invert_yaxis()
 
-        if not np.isfinite(y):
-            y = next(reversed(line.get_ydata()[~line.get_ydata().mask]), float("nan"))
-        if not np.isfinite(y) or not np.isfinite(x):
-            continue
+    # Remove normal legend
+    legend = ax.get_legend()
+    if legend:
+        legend.remove()
 
-        text = ax.annotate(name,
-                           xy=(x, y),
-                           xytext=(12, -2),
-                           color=line.get_color(),
-                           xycoords=(ax.get_xaxis_transform(),
-                                     ax.get_yaxis_transform()),
-                           textcoords="offset points",
-                           fontsize=8)
+    # Latest rank per team for right-side labels
+    last_week = data['matchup_period'].max()
 
-        text_width = (text.get_window_extent(
-            fig.canvas.get_renderer()).transformed(ax.transData.inverted()).width)
-        if np.isfinite(text_width):
-            ax.set_xlim(ax.get_xlim()[0], text.xy[0] + text_width * 1.05)
+    final_labels = (
+        data.loc[data['matchup_period'] == last_week, ['team_name', 'power_rank_ytd_asrank']]
+        .drop_duplicates()
+        .sort_values('power_rank_ytd_asrank')
+    )
 
-    # set axis labels and title
-    plt.xlim(0.5, max(x_pt) + 0.5)
-    plt.xlabel('Week', size=9)
-    plt.ylabel('Power Rank', size=9)
-    plt.xticks(size=9, color='#737373')
-    plt.yticks(size=9, color='#737373')
-    plt.title(f'Power Rank by Week thru {week}', size=10)
-    loc = plticker.MultipleLocator(base=1.0)  # this locator puts ticks at regular intervals
-    plot.xaxis.set_major_locator(loc)
+    # Add secondary right-side axis for labels only
+    ax2 = ax.twinx()
+    ax2.set_ylim(ax.get_ylim())
+    ax2.set_yticks(final_labels['power_rank_ytd_asrank'])
+    ax2.set_yticklabels(final_labels['team_name'], fontsize=8)
+    ax2.tick_params(axis='y', length=0, pad=8)
 
-    plot.invert_yaxis()
+    # Critical: stop secondary axis from drawing grid/background over the chart
+    ax2.grid(False)
+    ax2.patch.set_visible(False)
 
-    # Remove the legend
-    plot.legend().set_visible(False)
+    # Hide right axis line
+    ax2.spines['right'].set_visible(False)
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['left'].set_visible(False)
+    ax2.spines['bottom'].set_visible(False)
+    ax2.set_ylabel('')
 
-    plt.tight_layout()
+    # Color right-side labels to match each team's line
+    for tick_label in ax2.get_yticklabels():
+        team_name = tick_label.get_text()
+        tick_label.set_color(color_map.get(team_name, 'black'))
 
-    if path:
-        plt.savefig(path, bbox_inches='tight')
-    plt.show()
+    save_chart(path, fig=fig)
 
 
 def curr_powerrank_vs_rank(data, curr_week, path=None):
-    sns.set_theme(style='darkgrid', palette=None)
+    set_chart_theme()
+
     data = data.loc[data['matchup_period'] == curr_week]
 
     """
@@ -452,24 +520,19 @@ def curr_powerrank_vs_rank(data, curr_week, path=None):
                                                                                      'color': 'grey'})
 
     plt.legend(fontsize=8)
-    plt.tight_layout()
-    if path:
-        plt.savefig(path, bbox_inches='tight')
-    plt.show()
+
+    save_chart(path)
 
 
 def curr_matchup_chart(data, curr_week, path=None):
-    sns.set_theme(style='darkgrid', palette=None)
+    set_chart_theme()
+
     data = data.loc[data['matchup_period'] == curr_week]
 
     x_pt = data['team_pts_v_avg']
     y_pt = data['opp_pts_v_avg']
     label = data['team_name']
-    # Replace values in the 'win' column using .loc
-    print('-------------------')
-    print(data.info())
-    print(data.describe())
-    print(data.head().to_string())
+
     data['win'] = data['win'].replace({1: 'win', 0: 'loss'}).astype('string')
 
     sns.scatterplot(data=data, x=x_pt, y=y_pt,
@@ -516,22 +579,19 @@ def curr_matchup_chart(data, curr_week, path=None):
             for (x, y, name) in zip(x_pt, y_pt, label)]
     adjust_text(text, arrowprops={'arrowstyle': '-', 'color': '#9badc9', 'lw': 0.5})
 
-    plt.tight_layout()
-    if path:
-        plt.savefig(path, bbox_inches='tight')
-    plt.show()
+    save_chart(path)
 
 
 def print_and_save_charts(data, max_week=14, week_current=1):
-    chart_draft_pos_rank(data, max_week, f'../Outputs/1-pos_to_rank_max{max_week}.png')
-    chart_draft_vs_final(data, max_week, f'../Outputs/2-diff_draft_to_final_max{max_week}.png')
-    chart_week_avg(data, max_week, f'../Outputs/3-weekly_avg_scores_max{max_week}.png')
-    chart_all_play(data, max_week, f'../Outputs/4-all_play_wins{max_week}.png')
-    chart_team_median(data, max_week, f'../Outputs/5-median_scores_max{max_week}.png')
-    # chart_team_opp_density(data, max_week, f'../Outputs/6-score_against_opp_density_max{max_week}.png')
-    chart_power_rank_by_week(data, max_week, f'../Outputs/7-power_ranking_by_week_max{max_week}.png')
-    curr_powerrank_vs_rank(data, week_current, f'../Outputs/8-week{week_current}_power_ranking.png')
-    curr_matchup_chart(data, week_current, f'../Outputs/9-week{week_current}_matchup_chart.png')
+    chart_draft_pos_rank(data, max_week, f'../outputs/1-pos_to_rank_max{max_week}.png')
+    chart_draft_vs_final(data, max_week, f'../outputs/2-diff_draft_to_final_max{max_week}.png')
+    chart_week_avg(data, max_week, f'../outputs/3-weekly_avg_scores_max{max_week}.png')
+    chart_all_play(data, max_week, f'../outputs/4-all_play_wins{max_week}.png')
+    chart_team_median(data, max_week, f'../outputs/5-median_scores_max{max_week}.png')
+    # chart_team_opp_density(data, max_week, f'../outputs/6-score_against_opp_density_max{max_week}.png')
+    chart_power_rank_by_week(data, max_week, f'../outputs/7-power_ranking_by_week_max{max_week}.png')
+    curr_powerrank_vs_rank(data, week_current, f'../outputs/8-week{week_current}_power_ranking.png')
+    curr_matchup_chart(data, week_current, f'../outputs/9-week{week_current}_matchup_chart.png')
 
 
 if __name__ == '__main__':
@@ -550,4 +610,4 @@ if __name__ == '__main__':
 
     # prints for testing
     print(full_data.head(24).sort_values(by='team_id').to_string())
-    full_data.to_excel('../Outputs/weekly_score_data.xlsx', index=False)
+    full_data.to_excel('../outputs/weekly_score_data.xlsx', index=False)

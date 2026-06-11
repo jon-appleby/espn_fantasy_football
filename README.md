@@ -41,17 +41,16 @@ and **SWID**.
 To find your league ID, open your ESPN Fantasy league homepage and check the page URL. Look
 for a parameter similar to "leagueId=999999". Use the numeric value as ESPN_LEAGUE_ID.
 
-| Variable       | Description            | Example                             |
-|----------------|------------------------|-------------------------------------|
-| ESPN_LEAGUE_ID | ESPN fantasy league ID | 543987                              |
-| ESPN_SWID      | ESPN SWID cookie       | {123A51D-89AB-1234-Z987-1234GH5132} |
-| ESPN_S2        | ESPN_S2 cookie         | 'BAVKFxw89230f ... sSKMFasld29Sd'   |
+| Variable  | Description            | Example                             |
+|-----------|------------------------|-------------------------------------|
+| LEAGUE_ID | ESPN fantasy league ID | 543987                              |
+| SWID      | ESPN SWID cookie       | {123A51D-89AB-1234-Z987-1234GH5132} |
+| ESPN_S2   | ESPN_S2 cookie         | 'BAVKFxw89230f ... sSKMFasld29Sd'   |
 
 
 ### Running Weekly Report
-This creates weekly datasets and chart outputs in the outputs/ folder
+``run_weekly.py`` creates weekly datasets and chart outputs in the ``outputs/`` folder
 
-`python scripts/run_weekly.py --season 2025 --week 17 --output-dir outputs`
 
 #### Example Metrics
 | Metric            | Description                                                          |

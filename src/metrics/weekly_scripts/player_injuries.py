@@ -1,12 +1,11 @@
 import pandas as pd
-import numpy as np
 from time import sleep
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from weekly_scripts.act_opt_metrics import get_slates
-from src.espn_client import fetch_api_data
-from src.team_mapping import team_id_name
+from metrics.weekly_scripts.actual_vs_optimal import create_team_slates
+from espn.espn_client import fetch_api_data
+from espn.team_mapping import member_info
 
 
 def nfl_injuries(year) -> pd.DataFrame:
@@ -51,7 +50,7 @@ def nfl_injuries(year) -> pd.DataFrame:
 
     df = full_df.loc[full_df['position'].isin(['QB', 'WR', 'RB', 'TE'])]
 
-    df.to_excel('../Outputs/player_injuries.xlsx', index=False)
+    df.to_excel('../outputs/player_injuries.xlsx', index=False)
 
     return df
 
@@ -70,7 +69,7 @@ def fantasy_players(max_week_num, year, team_mapping) -> pd.DataFrame:
     for _ in range(max_week_num):
         espn_data = fetch_api_data(views=['mMatchup', 'mMatchupScore'], year=year,
                                    params={'scoringPeriodId': w, 'matchupPeriodId': w})
-        slates = get_slates(espn_data, week_num=w)
+        slates = create_team_slates(espn_data, week_num=w)
         for team_id, slate in slates.items():
             slate['week'] = w
             slate['team_id'] = team_id
@@ -121,7 +120,7 @@ def team_injuries(injuries, fantasy_data) -> pd.DataFrame:
 
     df['player_status_weight'] = df.apply(player_status_weight, axis=1)
 
-    df.to_excel('../Outputs/team_injuries.xlsx', index=False)
+    df.to_excel('../outputs/team_injuries.xlsx', index=False)
 
     print(df.head().to_string())
 
@@ -162,7 +161,7 @@ def chart_injuries(data, max_week_num):
     plt.xticks(size=9, color='#737373')
     plt.yticks(size=9, color='#737373')
 
-    path = f'../Outputs/11-week_{max_week_num}_player_injuries.png'
+    path = f'../outputs/11-week_{max_week_num}_player_injuries.png'
     plt.savefig(path, bbox_inches='tight')
 
     plt.tight_layout()
@@ -173,10 +172,12 @@ if __name__ == '__main__':
     season = 2025
     max_week = 2  # replace with current week, or set to 14 for full season
 
-    teams = team_id_name(season)
+    teams = {}
+    for member, info in member_info(season).items():
+        teams[member] = info['user_name']
 
     # injury status from NFL.com
-    # injured_players = pd.read_excel('../Outputs/player_injuries.xlsx')
+    # injured_players = pd.read_excel('../outputs/player_injuries.xlsx')
     injured_players = nfl_injuries(year=season)
 
     # players from each fantasy team

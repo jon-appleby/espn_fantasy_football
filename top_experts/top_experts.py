@@ -85,7 +85,7 @@ for group, dfs in df_dict.items():
         print('in season expert rankings')
         print(final_df.head(15).to_string(), '\n')
 
-        final_df.to_csv('../Outputs/experts_by_rank_in-season.csv')
+        final_df.to_csv('../outputs/experts_by_rank_in-season.csv')
     else:
         final_df = df.loc[
             (df['num_years'] > 2)  # has at least 3 years of rankings
@@ -101,4 +101,4 @@ for group, dfs in df_dict.items():
         print('draft expert rankings')
         print(final_df.head(15).to_string(), '\n')
 
-        final_df.to_csv('../Outputs/experts_by_rank_draft.csv')
+        final_df.to_csv('../outputs/experts_by_rank_draft.csv')
