@@ -90,15 +90,15 @@ weekly numbers, while others are a "season-to-date" summary.
 
 ### 1. Final standings did not match raw scoring strength
 
-Austin finished as the champion and also ranked first in the custom power ranking 
+Austin finished as the champion and also ranked first in power ranking 
 by Week 17. Austin averaged 127.5 points per week, had a 76.5% actual win rate, 
 and "improved" from draft position 11 to final rank 1.
 
 Mitch P had the highest average score of the season at 129 points per week, but 
 finished 4th. This shows why the project separates raw scoring strength from final 
-standings, since playoff timing and matchup structure can create different outcomes.
+standings, since playoff timing and matchups can create different outcomes.
 
-Jon also significantly "outperformed" draft position, moving from draft position 12 
+Jon also "outperformed" draft position, moving from draft position 12 
 to final rank 2 while maintaining one of the strongest all-play profiles in the league.
 
 ![7-power_ranking_by_week_max17.png](docs/images/7-power_ranking_by_week_max17.png)
@@ -110,7 +110,7 @@ to final rank 2 while maintaining one of the strongest all-play profiles in the 
 All-play ratio shows how often each team would have beaten every other 
 team each week. This helps separate team quality from head-to-head schedule luck.
 
-Mitch P had the best all-play ratio at approximately 67.4%, followed closely by 
+Mitch P had the best all-play ratio at 67.4%, followed closely by 
 Austin and Jon at approximately 66.8%. Lucas had a strong actual win rate of 70.6%, 
 but a lower all-play ratio of 57.2%, suggesting his record was stronger 
 than his weekly scoring.
@@ -123,7 +123,7 @@ matchups and were impacted by difficult matchups.
 
 ### 3. Opponent difficulty showed schedule variance
 
-Opponent difficulty compares each opponent’s weekly score against that opponent’s 
+Opponent difficulty compares each opponent’s weekly score against their 
 cumulative average. Positive values mean a team faced opponents who scored above 
 their usual level, and negative means the team faced opponents who scored below their 
 average.
@@ -132,8 +132,8 @@ Prem had the toughest average opponent difficulty at +10.3 points, followed by M
 at +7.6 and Jared at +4.6. Mitch B had the easiest average opponent difficulty at 
 -11.3 points, followed by Lucas at -6.6 and Mitch P at -6.5.
 
-This metric helps explain why standings and raw team quality can diverge. A team can 
-score reasonably well and still struggle if opponents repeatedly overperform in 
+This metric helps explain why standings and team quality can diverge. A team can 
+score well and still struggle if opponents repeatedly overperform in 
 their matchups.
 
 The matchup matrix is similar to all-play, and adds additional weekly context into 
