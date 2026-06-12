@@ -7,7 +7,7 @@ import seaborn as sns
 import numpy as np
 from adjustText import adjust_text
 
-from metrics.weekly_scripts.chart_utils import get_output_path, save_chart, set_chart_theme
+from metrics.weekly_scripts.chart_utils import get_output_path, save_chart, set_chart_theme, CHART_FONTS
 
 
 def fetch_boxscore_data(curr_year):
@@ -313,18 +313,24 @@ def chart_all_play(data, week, path=None):
                  float(i),
                  text,
                  ha='left', va='center',
-                 fontdict={'family': 'arial', 'size': 9, 'color': '#262626'}
+                 fontdict={'family': 'arial', 'size': CHART_FONTS['data_label'], 'color': '#262626'}
                  )
 
     # set labels / legend
-    plt.title(f'All Play Win/Loss for Weeks {min(data["matchup_period"])}-{max(data["matchup_period"])}')
+    plt.title(
+        f'All Play Win/Loss for Weeks {min(data["matchup_period"])}-{max(data["matchup_period"])}',
+        fontsize=CHART_FONTS['title']
+    )
     plt.ylabel('Team')
     plt.xlabel('Win/Loss Ratio')
     plt.legend(loc='lower right')
 
     # set x ticks
-    plt.xticks([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-               ['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%'])
+    plt.xticks(
+        [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+        ['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%'],
+        fontsize=CHART_FONTS['tick']
+    )
 
     save_chart(path)
 
@@ -360,11 +366,11 @@ def chart_team_median(data, week, path=None):
 
     ax.set_title(
         f'Median scores for weeks {min(data["matchup_period"])}-{max(data["matchup_period"])}',
-        fontsize=10
+        fontsize=CHART_FONTS['title']
     )
 
-    ax.set_xlabel('Team')
-    ax.set_ylabel('Team Points')
+    ax.set_xlabel('Team', fontsize=CHART_FONTS['label'])
+    ax.set_ylabel('Team Points', fontsize=CHART_FONTS['label'])
 
     labels = [
         f'{team}\nRank {int(rank_map[team])}'
@@ -372,7 +378,16 @@ def chart_team_median(data, week, path=None):
     ]
 
     ax.set_xticks(range(len(labels)))
-    ax.set_xticklabels(labels, rotation=45, ha='right', fontsize=8)
+    ax.set_xticklabels(labels, rotation=45, ha='right', fontsize=CHART_FONTS['tick'])
+
+    for label in ax.get_xticklabels():
+        label.set_fontsize(CHART_FONTS['tick'])
+
+    for label in ax.get_yticklabels():
+        label.set_fontsize(CHART_FONTS['tick'])
+
+    ax.tick_params(axis='y', labelsize=CHART_FONTS['tick'])
+    ax.tick_params(axis='x', labelsize=CHART_FONTS['tick'])
 
     save_chart(path, fig=fig)
 

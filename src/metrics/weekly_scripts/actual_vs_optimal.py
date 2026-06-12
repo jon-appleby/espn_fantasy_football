@@ -3,13 +3,12 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from espn.espn_client import fetch_api_data
 from espn.constants import SLOT_CODES
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from metrics.weekly_scripts.chart_utils import set_chart_theme
+from metrics.weekly_scripts.chart_utils import set_chart_theme, save_chart
 
 load_dotenv()
 SWID = os.getenv("SWID")
@@ -153,52 +152,209 @@ def create_lineup_efficiency(data, team):
     return point_df
 
 
-def chart_actual_vs_optimal(data_input, curr_week=1):
-    set_chart_theme()
+def get_matchup_team_order(weekly_data, week: int, winner_first: bool = True) -> list[str]:
+    """
+    Create y-axis team order grouped by weekly matchup
+    """
 
-    # sort for chart
-    data = data_input.sort_values(by='actual_pts', ascending=False)
+    df = weekly_data.loc[weekly_data["matchup_period"] == week].copy()
 
-    actual_pt_color = 'teal'
-    optimal_pt_color = 'gray'
-    espn_proj_color = 'purple'
-    # Set up the figure and axes
-    plt.figure(figsize=(10, 8))
-    ax = sns.stripplot(data=data, x='actual_pts', y='team_name', marker='o', size=10, color=actual_pt_color)
+    # one shared key per matchup, regardless of team/opponent direction
+    df["matchup_key"] = df.apply(
+        lambda row: tuple(sorted([row["team_id"], row["opp_id"]])),
+        axis=1,
+    )
 
-    # Add line starting at a_pts and end at o_pts
-    ax.hlines(y=data['team_name'], xmin=data['actual_pts'], xmax=data['optimal_pts'],
-              color=optimal_pt_color, linewidth=4, linestyles='-')
+    # order matchups by highest score in each matchup
+    matchup_order = (
+        df.groupby("matchup_key")["team_points"]
+        .max()
+        .reset_index(name="winner_points")
+        .sort_values("winner_points", ascending=False)
+    )
 
-    # Add dots at the end of the lines (optimal_pts and actual_pts)
-    plt.scatter(data['optimal_pts'], range(len(data)), color=optimal_pt_color, marker='|', s=120, label='optimal_pts')
-    plt.scatter(data['actual_pts'], range(len(data)), color=actual_pt_color, marker='o', s=120, label='actual_pts')
-    plt.scatter(data['espn_proj'], range(len(data)), color=espn_proj_color, marker='|', s=60, label='espn_proj')
+    team_order = []
 
-    # Annotate actual_pts on the left and optimal_pts on the right
-    for index, row in data.iterrows():
-        ax.annotate(f'{row["actual_pts"]:.2f}',  # :.2f formats the value of the float to 2 decimals
-                    xy=(row['actual_pts'], row['team_name']),  # specify where to plot the text
-                    xytext=(-9, -1),  # specify offset of the xy coords above
-                    textcoords='offset points', color=actual_pt_color,
-                    fontsize=8, ha='right', va='center')
+    for matchup_key in matchup_order["matchup_key"]:
+        matchup = df.loc[df["matchup_key"] == matchup_key].copy()
 
-        ax.annotate(f'{row["optimal_pts"]:.2f}', xy=(row['optimal_pts'], row['team_name']),
-                    xytext=(5, -1),
-                    textcoords='offset points', color=optimal_pt_color,
-                    fontsize=8, ha='left', va='center')
+        if winner_first:
+            matchup = matchup.sort_values("team_points", ascending=False)
 
-    # Set axis labels and title
-    plt.xlim(min(data['actual_pts'] - 10), max(data['optimal_pts'] + 10))
-    plt.xlabel('Points', size=9)
-    plt.ylabel('Team', size=9)
-    plt.xticks(size=9, color='#737373')
-    plt.yticks(size=9, color='#737373')
-    plt.title(f'Actual vs Optimal Points - Week {curr_week}', size=10)
+        team_order.extend(matchup["team_name"].to_list())
 
-    # Add legend
-    plt.legend()
+    return team_order
 
-    plt.savefig(f'../outputs/10-week{curr_week}_actual_vs_optimal.png', bbox_inches='tight')
 
-    plt.show()
+from matplotlib.lines import Line2D
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from metrics.weekly_scripts.chart_utils import set_chart_theme, save_chart
+
+
+def chart_actual_vs_optimal(data_input, curr_week=1, team_order=None, path=None):
+    set_chart_theme(style="white")
+
+    data = data_input.copy()
+
+    actual_pt_color = "teal"
+    optimal_pt_color = "gray"
+    espn_proj_color = "purple"
+    matchup_band_color = "#f0f0f0"
+
+    if team_order is None:
+        data = data.sort_values(by="actual_pts", ascending=False)
+        team_order = data["team_name"].to_list()
+        y_map = {team: idx for idx, team in enumerate(team_order)}
+    else:
+        data["team_name"] = pd.Categorical(
+            data["team_name"],
+            categories=team_order,
+            ordered=True,
+        )
+        data = data.sort_values("team_name")
+
+        # add a gap after every pair
+        y_map = {
+            team: idx + (idx // 2)
+            for idx, team in enumerate(team_order)
+        }
+
+    data["plot_y"] = data["team_name"].astype(str).map(y_map)
+
+    fig, ax = plt.subplots(figsize=(11, 8))
+
+    #----------------------#
+    # shaded matchup bands #
+    #----------------------#
+    for i in range(0, len(team_order), 2):
+        pair = team_order[i:i + 2]
+        pair_y = [y_map[t] for t in pair if t in y_map]
+
+        if pair_y:
+            ax.axhspan(
+                min(pair_y) - 0.5,
+                max(pair_y) + 0.5,
+                facecolor=matchup_band_color,
+                zorder=0
+            )
+
+    # x-grid only
+    ax.grid(axis="x", color="#d9d9d9", linewidth=0.8)
+    ax.grid(axis="y", visible=False)
+
+    # dumbbell lines
+    ax.hlines(
+        y=data["plot_y"],
+        xmin=data["actual_pts"],
+        xmax=data["optimal_pts"],
+        color=optimal_pt_color,
+        linewidth=3.5,
+        zorder=2
+    )
+
+    # optimal marker
+    ax.scatter(
+        data["optimal_pts"],
+        data["plot_y"],
+        color=optimal_pt_color,
+        marker="|",
+        s=160,
+        zorder=3
+    )
+
+    # actual marker
+    ax.scatter(
+        data["actual_pts"],
+        data["plot_y"],
+        color=actual_pt_color,
+        marker="o",
+        s=120,
+        zorder=4
+    )
+
+    # ESPN projection marker
+    ax.scatter(
+        data["espn_proj"],
+        data["plot_y"],
+        color=espn_proj_color,
+        marker="|",
+        s=90,
+        zorder=3
+    )
+
+    # value labels
+    for _, row in data.iterrows():
+        ax.annotate(
+            f'{row["actual_pts"]:.2f}',
+            xy=(row["actual_pts"], row["plot_y"]),
+            xytext=(-8, 0),
+            textcoords="offset points",
+            color=actual_pt_color,
+            fontsize=8,
+            ha="right",
+            va="center",
+        )
+
+        ax.annotate(
+            f'{row["optimal_pts"]:.2f}',
+            xy=(row["optimal_pts"], row["plot_y"]),
+            xytext=(6, 0),
+            textcoords="offset points",
+            color=optimal_pt_color,
+            fontsize=8,
+            ha="left",
+            va="center",
+        )
+
+    # y-axis labels
+    ax.set_yticks([y_map[team] for team in team_order])
+    ax.set_yticklabels(team_order)
+
+    x_min = data[["actual_pts", "optimal_pts", "espn_proj"]].min().min() - 10
+    x_max = data[["actual_pts", "optimal_pts", "espn_proj"]].max().max() + 10
+    ax.set_xlim(x_min, x_max)
+
+    ax.set_xlabel("Points", fontsize=9)
+    ax.set_ylabel("")
+    ax.set_title(f"Actual vs Optimal Points by Matchup - Week {curr_week}", fontsize=11)
+
+    # clean spines
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    ax.tick_params(axis="x", labelsize=9, colors="#555555")
+    ax.tick_params(axis="y", labelsize=9, colors="#555555", length=0)
+
+    # first item on top
+    ax.invert_yaxis()
+
+    # custom legend
+    legend_handles = [
+        Line2D([0], [0], color=optimal_pt_color, lw=3, label="Actual to optimal range"),
+        Line2D([0], [0], marker="o", color="none",
+               markerfacecolor=actual_pt_color, markeredgecolor=actual_pt_color,
+               markersize=10, label="Actual points"),
+        Line2D([0], [0], marker="|", color=optimal_pt_color,
+               linestyle="None", markersize=12, label="Optimal points"),
+        Line2D([0], [0], marker="|", color=espn_proj_color,
+               linestyle="None", markersize=10, label="ESPN projection"),
+    ]
+    # ax.legend(handles=legend_handles, loc="upper left", frameon=True)
+
+    ax.legend(
+        handles=legend_handles,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.00),
+        ncol=4,
+        frameon=False,
+        columnspacing=1.4,
+        handletextpad=0.6,
+        fontsize=9
+    )
+
+    if path is None:
+        path = f"../outputs/10-week{curr_week}_actual_vs_optimal.png"
+
+    save_chart(path, fig=fig)

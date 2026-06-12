@@ -52,7 +52,3 @@ def member_info_df(year=2024) -> pd.DataFrame:
     df = pd.DataFrame.from_dict(members, orient='index').reset_index().rename(columns={'index': 'id'})
 
     return df
-
-
-if __name__ == '__main__':
-    member_info_df(2025)

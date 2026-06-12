@@ -4,6 +4,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import Literal
 
+CHART_FONTS = {
+    "title": 12,
+    "label": 9,
+    "data_label": 9,
+    "tick": 9,
+    "legend": 9,
+}
 
 def set_chart_theme(
         style: Literal["white", "dark", "whitegrid", "darkgrid", "ticks"] = "darkgrid",

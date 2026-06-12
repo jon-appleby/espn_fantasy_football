@@ -4,7 +4,7 @@ import numpy as np
 import seaborn as sns
 import dataframe_image as dfi
 
-from metrics.weekly_scripts.chart_utils import set_chart_theme
+from metrics.weekly_scripts.chart_utils import set_chart_theme, CHART_FONTS
 from metrics.weekly_scripts.weekly_metrics import fetch_boxscore_data, create_matchup_data
 from espn.team_mapping import member_info
 from espn.espn_client import fetch_api_data
@@ -103,18 +103,19 @@ def chart_opp_difficulty(data, year):
         vmin=-max_abs,
         vmax=max_abs,
         annot=True,
+        annot_kws={'size': CHART_FONTS['data_label']},
         fmt='.0f',
         linewidths=0.5,
         linecolor='white',
         cbar_kws={'label': 'Opponent points vs cumulative average'},
-        ax=ax
+        ax=ax,
     )
 
-    ax.set_title(f'Opponent Difficulty by Week - {year}', fontsize=11)
-    ax.set_xlabel('Week', fontsize=9)
-    ax.set_ylabel('Team', fontsize=9)
-    ax.tick_params(axis='x', labelrotation=0, labelsize=8)
-    ax.tick_params(axis='y', labelsize=8)
+    ax.set_title(f'Opponent Difficulty by Week - {year}', fontsize=CHART_FONTS['title'])
+    ax.set_xlabel('Week', fontsize=CHART_FONTS['label'])
+    ax.set_ylabel('Team', fontsize=CHART_FONTS['label'])
+    ax.tick_params(axis='x', labelrotation=0, labelsize=CHART_FONTS['label'])
+    ax.tick_params(axis='y', labelsize=CHART_FONTS['label'])
 
     plt.tight_layout()
     plt.savefig(f'../outputs/12-year_{year}_opp_difficulty_heatmap.png', bbox_inches='tight')
@@ -140,23 +141,31 @@ def chart_opp_difficulty(data, year):
     )
 
     ax.axvline(0, color='black', linewidth=0.8)
-    ax.set_title(f'Average Opponent Difficulty - {year}', fontsize=11)
-    ax.set_xlabel('Avg opponent points vs cumulative average', fontsize=9)
-    ax.set_ylabel('Team', fontsize=9)
-    ax.tick_params(axis='both', labelsize=8)
+    ax.set_title(f'Average Opponent Difficulty - {year}', fontsize=CHART_FONTS['title'])
+    ax.set_xlabel('Avg opponent points vs cumulative average', fontsize=CHART_FONTS['label'])
+    ax.set_ylabel('Team', fontsize=CHART_FONTS['label'])
+    ax.tick_params(axis='both', labelsize=CHART_FONTS['tick'])
 
     for bar in bars:
         value = bar.get_width()
-        x_pos = value + 0.5 if value >= 0 else value - 0.5
-        ha = 'left' if value >= 0 else 'right'
+        y_pos = bar.get_y() + bar.get_height() / 2
 
-        ax.text(
-            x_pos,
-            bar.get_y() + bar.get_height() / 2,
+        if value >= 0:
+            x_offset = 3
+            ha = 'left'
+        else:
+            x_offset = -3
+            ha = 'right'
+
+        ax.annotate(
             f'{value:.1f}',
+            xy=(value, y_pos),
+            xytext=(x_offset, 0),
+            textcoords='offset points',
             va='center',
             ha=ha,
-            fontsize=8
+            fontsize=CHART_FONTS['data_label'],
+            color='#262626'
         )
 
     ax.text(
@@ -209,6 +218,6 @@ def summarize_opponent_difficulty(data: pd.DataFrame, year):
     df = df.reset_index()
     df['rank'] = df['team'].map(team_ranks)
 
-    dfi.export(df, f'../outputs/13-year_{year}_score_above_avg.png', table_conversion='matplotlib')
+    dfi.export(df, f'../outputs/13-year_{year}_opponent_difficulty_table.png', table_conversion='matplotlib')
 
     return df
