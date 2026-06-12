@@ -1,14 +1,13 @@
 import os
 from typing import Any
 
+import matplotlib.pyplot as plt
+import pandas as pd
 from dotenv import load_dotenv
+from matplotlib.lines import Line2D
 
 from espn.constants import SLOT_CODES
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-from metrics.weekly.chart_utils import set_chart_theme, save_chart
+from metrics.weekly.chart_utils import save_chart, set_chart_theme
 
 load_dotenv()
 SWID = os.getenv("SWID")
@@ -98,25 +97,30 @@ def calculate_lineup_points(slates, posns, struc):
 
     data = {}
     for tmid, slate in slates.items():
-        pts = {'opts': 0, 'epts': 0, 'apts': 0}
+        # Set dict and assign actual starters
+        pts = {
+            'opts': 0,
+            'epts': 0,
+            'apts': slate.loc[~slate['Slot'].isin(['Bench', 'IR']),'Actual',].sum()}
 
-        # ACTUAL STARTERS
-        pts['apts'] = slate.query('Slot not in ["Bench", "IR"]').filter(['Actual']).sum().values[0]
-
-        # OPTIMAL and ESPNPROJ STARTERS
+        # optimal and espn-proj starters
         for method, cat in [('Actual', 'opts'), ('Proj', 'epts')]:
             actflex = -100  # actual pts scored by flex
             proflex = -100  # "proj" pts scored by flex
-            for pos, num in zip(posns, struc):
+            for pos, num in zip(posns, struc, strict=False):
                 # actual points, sorted by either actual or proj outcome
-                t = slate.query('Pos == @pos') \
-                        .sort_values(by=method, ascending=False) \
-                        .filter(['Actual']).values[:, 0]
+                t = (
+                    slate.loc[slate['Pos'] == pos]
+                    .sort_values(by=method, ascending=False)['Actual']
+                    .to_numpy()
+                )
 
                 # projected points, sorted by either actual or proj outcome
-                t2 = slate.query('Pos == @pos') \
-                         .sort_values(by=method, ascending=False) \
-                         .filter(['Proj']).values[:, 0]
+                t2 = (
+                    slate.loc[slate['Pos'] == pos]
+                    .sort_values(by=method, ascending=False)['Proj']
+                    .to_numpy()
+                )
 
                 # sum up points
                 pts[cat] += t[:num].sum()
@@ -141,7 +145,7 @@ def create_lineup_efficiency(data, team):
     """
     point_df = pd.DataFrame(data).transpose()
     point_df['TeamID'] = range(1, 1 + len(point_df))
-    point_df = pd.merge(point_df, team[['id', 'team_name']], left_on='TeamID', right_on='id', how='left')
+    point_df = point_df.merge(team[['id', 'team_name']], left_on='TeamID', right_on='id', how='left')
     point_df = point_df.rename(columns={'opts': 'optimal_pts',
                                         'apts': 'actual_pts',
                                         'epts': 'espn_proj',
@@ -184,13 +188,6 @@ def get_matchup_team_order(weekly_data, week: int, winner_first: bool = True) ->
         team_order.extend(matchup["team_name"].to_list())
 
     return team_order
-
-
-from matplotlib.lines import Line2D
-import pandas as pd
-import matplotlib.pyplot as plt
-
-from metrics.weekly.chart_utils import set_chart_theme, save_chart
 
 
 def chart_actual_vs_optimal(data_input, curr_week=1, team_order=None, path=None):

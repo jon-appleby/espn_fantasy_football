@@ -1,0 +1,38 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+indent-width = 4
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # import sorting
+    "B",    # bugbear
+    "UP",   # modern Python syntax
+    "SIM",  # simplify code
+    "C4",   # better comprehensions
+    "RUF",  # Ruff-specific rules
+    "PERF", # simple performance issues
+    "ARG",  # unused function arguments
+    "PD",    # pandas-vet; useful for pandas-heavy projects
+    "N",     # naming conventions
+#    "T20",   # flags print statements
+#    "PL",   # Pylint-style rules; useful but can be noisy
+#    "PTH",   # prefer pathlib over os.path
+#    "TRY",   # exception-handling rules
+#    "ERA",   # commented-out code
+#    "DTZ",   # timezone-aware datetime rules
+#    "S",     # security checks
+]
+ignore = [
+    "E501",   # line length handled by formatter
+    "PD901",  # allow common df variable name
+]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = 120

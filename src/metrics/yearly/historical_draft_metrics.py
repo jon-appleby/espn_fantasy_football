@@ -1,11 +1,10 @@
-from espn.espn_client import fetch_api_data
+import time
+
 import matplotlib.pyplot as plt
 import pandas as pd
-from espn.team_mapping import member_info_df
-import time
 import seaborn as sns
-from pathlib import Path
-# from sklearn.ensemble import RandomForestRegressor
+
+from espn.espn_client import fetch_api_data
 
 
 def iterate_thru_years(max_year, min_year=2018):
@@ -67,69 +66,3 @@ def chart_draft_v_rank(d):
     pos_rank.invert_yaxis()
     plt.tight_layout()
     plt.show()
-
-
-def predict_rank(d, curr_year, draft_pos):
-    print('\npredicting ranks based on draft pos')
-
-    train_df = d.loc[d['year'] < curr_year]
-
-    # create training and test data
-    x_train = train_df[['draft_pos', 'team_id']]
-    y_train = train_df['rank']
-
-    # for testing the model
-    # test_df = d.loc[d['year'] == curr_year-2]
-    # x_test = test_df[['draft_pos', 'team_id']]
-    # y_test = test_df['rank']
-
-    # create dataframe of 2024 draft
-    draft_pos = pd.DataFrame(draft_pos)
-
-    # create and fit model using training data
-    model = RandomForestRegressor(n_estimators=200, random_state=42)
-    model.fit(x_train, y_train)
-
-    # make predictions / test data on test data OR current 2023 draft
-    # predictions = model.predict(x_test)
-    predictions = pd.DataFrame(model.predict(draft_pos)).rename(columns={0: 'predicted_rank'})
-
-    merged = draft_pos.merge(predictions, how='left', left_index=True, right_index=True)
-    merged['team_player_name'] = merged['team_id'].map(team_id_user)
-    merged.sort_values(by='predicted_rank', inplace=True)
-    print(merged)
-
-    # # evaluate model performance
-    # mse = mean_squared_error(y_test, predictions)
-    # print(f'mse = {mse}')
-    #
-    # mae = mean_absolute_error(y_test, predictions)
-    # print(f'mae = {mae}')
-
-
-if __name__ == '__main__':
-    year_end = 2025
-    year_start = 2018
-    current_year = 2026
-    current_draft_pos = [
-        {'draft_pos': 1, 'team_id': 9},
-        {'draft_pos': 2, 'team_id': 2},
-        {'draft_pos': 3, 'team_id': 11},
-        {'draft_pos': 4, 'team_id': 1},
-        {'draft_pos': 5, 'team_id': 5},
-        {'draft_pos': 6, 'team_id': 8},
-        {'draft_pos': 7, 'team_id': 12},
-        {'draft_pos': 8, 'team_id': 4},
-        {'draft_pos': 9, 'team_id': 3},
-        {'draft_pos': 10, 'team_id': 10},
-        {'draft_pos': 11, 'team_id': 7},
-        {'draft_pos': 12, 'team_id': 6},
-    ]
-
-    """use csv after running once to save on API calls"""
-    # d = iterate_thru_years(min_year=year_start, max_year=year_end)
-    d = pd.read_csv(f'../../../outputs/historical_draft_data_{year_start}-{year_end}.csv')
-    print(d.corr())
-
-    chart_draft_v_rank(d)
-    # predict_rank(d, curr_year=current_year, draft_pos=current_draft_pos)

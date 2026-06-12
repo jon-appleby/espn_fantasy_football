@@ -1,11 +1,13 @@
-import pandas as pd
 from time import sleep
+
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
 
-from metrics.weekly.actual_vs_optimal import create_team_slates
 from espn.espn_client import fetch_api_data
 from espn.team_mapping import member_info
+from metrics.weekly.actual_vs_optimal import create_team_slates
+from metrics.weekly.chart_utils import save_chart
 
 
 def nfl_injuries(year) -> pd.DataFrame:
@@ -45,8 +47,8 @@ def nfl_injuries(year) -> pd.DataFrame:
     full_df['player_status'] = full_df['player_status'].astype(object)
 
     # set status to 'out' for Q, D, or Out status, and 'in' for anybody without a status
-    full_df.loc[full_df['game status'].notnull(), 'player_status'] = 'out'
-    full_df['player_status'].replace('', 'in', inplace=True)
+    full_df.loc[full_df['game status'].notna(), 'player_status'] = 'out'
+    full_df['player_status'] = full_df['player_status'].replace('', 'in')
 
     df = full_df.loc[full_df['position'].isin(['QB', 'WR', 'RB', 'TE'])]
 
@@ -97,32 +99,34 @@ def team_injuries(injuries, fantasy_data) -> pd.DataFrame:
 
     print('\nmerging injury and fantasy team data')
 
-    df = pd.merge(left=fantasy_data, right=injuries, how='left', left_on=['Name', 'week'], right_on=['player', 'week'])
+    df = fantasy_data.merge(right=injuries, how='left', left_on=['Name', 'week'], right_on=['player', 'week'])
     df.columns = df.columns.str.lower()
 
     # update status to 'out' if the player is on IR or if there was no status from NFL.com (which already
     # marks 'in' for players in the table with no status
-    df['player_status'].fillna('in', inplace=True)
+    df['player_status'] = df['player_status'].fillna('in')
     df['player_status'] = df.apply(lambda row: 'out' if row['slot'] == 'IR' else row['player_status'], axis=1)
-    df.rename(columns={'game status': 'game_status'}, inplace=True)
-
-    df.drop(columns=['player', 'injuries', 'position', 'practice status'], inplace=True)
+    df = (
+        df
+        .rename(columns={'game status': 'game_status'})
+        .drop(columns=['player', 'injuries', 'position', 'practice status'])
+    )
 
     def player_status_weight(row):
         if row['actual'] > 0 or row['player_status'] == 'in':
             return 0
-        elif row['game_status'] == 'Questionable':
+        elif (
+                row['game_status'] == 'Questionable'
+                or row['game_status'] == 'Doubtful'
+                or row['game_status'] == 'Out'
+                or row['slot'] == 'IR'
+        ):
             return 1
-        elif row['game_status'] == 'Doubtful':
-            return 1
-        elif row['game_status'] == 'Out' or row['slot'] == 'IR':
-            return 1
+        return None
 
     df['player_status_weight'] = df.apply(player_status_weight, axis=1)
 
     df.to_excel('../outputs/team_injuries.xlsx', index=False)
-
-    print(df.head().to_string())
 
     return df
 
@@ -144,7 +148,7 @@ def chart_injuries(data, max_week_num):
                 legend=False
                 )
 
-    for bar, (_, row) in zip(ax.patches, filtered.iterrows()):
+    for bar, (_, row) in zip(ax.patches, filtered.iterrows(), strict=False):
         x_value = bar.get_x() + bar.get_width() / 2  # X coordinate (center of the bar)
         y_value = bar.get_height()  # Y coordinate (height of the bar)
 
@@ -164,8 +168,7 @@ def chart_injuries(data, max_week_num):
     path = f'../outputs/11-week_{max_week_num}_player_injuries.png'
     plt.savefig(path, bbox_inches='tight')
 
-    plt.tight_layout()
-    plt.show()
+    save_chart(path, fig=fig)
 
 
 if __name__ == '__main__':

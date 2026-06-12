@@ -1,13 +1,13 @@
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
-import seaborn as sns
 import dataframe_image as dfi
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 
-from metrics.weekly.chart_utils import set_chart_theme, CHART_FONTS
-from metrics.weekly.weekly_metrics import fetch_boxscore_data, create_matchup_data
-from espn.team_mapping import member_info
 from espn.espn_client import fetch_api_data
+from espn.team_mapping import member_info
+from metrics.weekly.chart_utils import CHART_FONTS, save_chart, set_chart_theme
+from metrics.weekly.weekly_metrics import create_matchup_data, fetch_boxscore_data
 
 
 def create_opp_difficulty_data(year):
@@ -179,13 +179,11 @@ def chart_opp_difficulty(data, year):
         ha='right'
     )
 
-    plt.tight_layout()
-    plt.savefig(f'../outputs/14-year_{year}_opp_difficulty_summary.png', bbox_inches='tight')
-    plt.show()
+    save_chart(f'../outputs/14-year_{year}_opp_difficulty_summary.png', fig=fig)
 
 
 def summarize_opponent_difficulty(data: pd.DataFrame, year):
-    df = data.drop_duplicates('team1_name')['team1_name']
+    df = data[['team1_name']].drop_duplicates('team1_name')
 
     data_above = data.loc[data['opp_avg_diff'] > 0]
     count_above = data_above.groupby('team1_name').size().reset_index(name='weeks_above_avg')
@@ -195,13 +193,13 @@ def summarize_opponent_difficulty(data: pd.DataFrame, year):
     count_below = data_below.groupby('team1_name').size().reset_index(name='weeks_below_avg')
     avg_below = data_below.groupby('team1_name')['opp_avg_diff'].mean().reset_index(name='avg_below_avg')
 
-    df = pd.merge(left=df, right=count_above, how='left', on='team1_name')
-    df = pd.merge(left=df, right=avg_above, how='left', on='team1_name')
+    df = df.merge(right=count_above, how='left', on='team1_name')
+    df = df.merge(right=avg_above, how='left', on='team1_name')
     df = df.fillna(0)
     df['total_above'] = df['weeks_above_avg'] * df['avg_above_avg']
 
-    df = pd.merge(left=df, right=count_below, how='left', on='team1_name')
-    df = pd.merge(left=df, right=avg_below, how='left', on='team1_name')
+    df = df.merge(right=count_below, how='left', on='team1_name')
+    df = df.merge(right=avg_below, how='left', on='team1_name')
     df = df.fillna(0)
     df['total_below'] = df['weeks_below_avg'] * df['avg_below_avg']
 

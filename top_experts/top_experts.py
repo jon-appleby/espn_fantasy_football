@@ -1,22 +1,23 @@
 import os
-import pandas as pd
 from datetime import datetime as dt
+
+import pandas as pd
 
 df_dict = {
     'in_season': [],
     'draft': []
 }
-for root, dirs, files in os.walk('./input'):
+for root, _, files in os.walk('./input'):
     for file in files:
         year = file.split('_')[3]
         f = os.path.join(root, file)
         file_df = pd.read_csv(f).replace('-', 0).fillna(0)
         file_df[['expert', 'group']] = file_df['Expert Name'].str.split(' - ', expand=True)
-        file_df.drop(columns=['group', 'Expert Name'], inplace=True)
-        file_df.drop_duplicates(inplace=True)
+        file_df = file_df.drop(columns=['group', 'Expert Name'])
+        file_df = file_df.drop_duplicates()
         file_df['max_year'] = int(year)
         file_df['min_year'] = int(year)
-        file_df['Rank'].replace({0: 99}, inplace=True)
+        file_df['Rank'] = file_df['Rank'].replace({0: 99})
         file_df['Rank'] = file_df['Rank'].astype(int)
 
         if 'SeasonToDate' in file:
@@ -45,22 +46,22 @@ for group, dfs in df_dict.items():
 
     # get max year
     max_years = start_df.groupby('expert')['max_year'].max().reset_index()
-    df = pd.merge(left=df, right=max_years, on='expert', how='left')
+    df = df.merge(right=max_years, on='expert', how='left')
 
     # get min year
     min_years = start_df.groupby('expert')['min_year'].min().reset_index()
-    df = pd.merge(left=df, right=min_years, on='expert', how='left')
+    df = df.merge(right=min_years, on='expert', how='left')
 
     # get num years
     num_years = start_df.groupby('expert')['num_years'].count().reset_index()
-    df = pd.merge(left=df, right=num_years, on='expert', how='left')
+    df = df.merge(right=num_years, on='expert', how='left')
 
     # get rank
     rank = start_df.groupby('expert')['Rank'].sum().reset_index().rename(columns={'Rank': 'rank_sum'})
-    df = pd.merge(left=df, right=rank, on='expert', how='left')
+    df = df.merge(right=rank, on='expert', how='left')
 
     # remove invalid / NaN
-    df.dropna(inplace=True)
+    df = df.dropna()
 
     # update types
     df[['max_year', 'min_year', 'num_years', 'rank']] = df[['max_year', 'min_year', 'num_years', 'rank']].astype(int)
@@ -79,8 +80,7 @@ for group, dfs in df_dict.items():
             (df['rank'] > 0)
         ].reset_index().drop(columns='index')
 
-        final_df.sort_values('avg_rank_by_year', inplace=True)
-        final_df = final_df.reset_index().drop(columns='index')
+        final_df = final_df.sort_values('avg_rank_by_year').reset_index().drop(columns='index')
 
         print('in season expert rankings')
         print(final_df.head(15).to_string(), '\n')
@@ -95,8 +95,7 @@ for group, dfs in df_dict.items():
             (df['rank'] > 0)
             ].sort_values('rank').reset_index().drop(columns='index')
 
-        final_df.sort_values('avg_rank_by_year', inplace=True)
-        final_df = final_df.reset_index().drop(columns='index')
+        final_df = final_df.sort_values('avg_rank_by_year').reset_index().drop(columns='index')
 
         print('draft expert rankings')
         print(final_df.head(15).to_string(), '\n')

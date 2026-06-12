@@ -1,8 +1,8 @@
 from pathlib import Path
+from typing import Literal
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-from typing import Literal
 
 CHART_FONTS = {
     "title": 12,
@@ -28,7 +28,7 @@ def get_output_path(output_dir: str | Path, filename: str) -> Path:
 
 
 def save_chart(
-        path: str | Path = None,
+        path: str | Path | None = None,
         fig=None,
         show: bool = True,
         close: bool = True,

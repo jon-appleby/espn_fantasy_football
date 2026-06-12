@@ -1,13 +1,13 @@
-from espn.espn_client import fetch_api_data
-import pandas as pd
-import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
-import seaborn as sns
 import numpy as np
+import pandas as pd
+import seaborn as sns
 from adjustText import adjust_text
 
-from metrics.weekly.chart_utils import get_output_path, save_chart, set_chart_theme, CHART_FONTS
+from espn.espn_client import fetch_api_data
+from metrics.weekly.chart_utils import CHART_FONTS, save_chart, set_chart_theme
 
 
 def fetch_boxscore_data(curr_year):
@@ -85,27 +85,29 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
     merge src data inputs, then create additional fields used later for plotting
     """
     # merge the first 2 datasets
-    combine_df = pd.merge(scores_for_df, teams_for_df, left_on='Team1_ID', right_on='Team_ID')
-    combine_df = pd.merge(combine_df, teams_for_df, left_on='Team2_ID', right_on='Team_ID')
+    combine_df = scores_for_df.merge(teams_for_df, left_on='Team1_ID', right_on='Team_ID')
+    combine_df = combine_df.merge(teams_for_df, left_on='Team2_ID', right_on='Team_ID')
 
     # drop and rename some fields
-    combine_df = combine_df.drop(['Team_ID_x', 'Team_ID_y'], axis=1)
-    combine_df.rename(columns={'Team_Name_x': 'team_name',
-                               'Team_Name_y': 'opp_name',
-                               'Team1_ID': 'team_id',
-                               'Team1_Points': 'team_points',
-                               'Team2_ID': 'opp_id',
-                               'Team2_Points': 'opp_points',
-                               'Matchup_Period': 'matchup_period'},
-                      inplace=True)
+    combine_df = (
+        combine_df
+        .drop(['Team_ID_x', 'Team_ID_y'], axis=1)
+        .rename(columns={'Team_Name_x': 'team_name',
+                         'Team_Name_y': 'opp_name',
+                         'Team1_ID': 'team_id',
+                         'Team1_Points': 'team_points',
+                         'Team2_ID': 'opp_id',
+                         'Team2_Points': 'opp_points',
+                         'Matchup_Period': 'matchup_period'})
+    )
 
     # merge in the draft and rank details
-    combine_df = pd.merge(combine_df, draft_for_df, left_on='team_id', right_on='team_id')
-    combine_df = pd.merge(combine_df, rank_for_df, left_on='team_id', right_on='team_id')
+    combine_df = combine_df.merge(draft_for_df, left_on='team_id', right_on='team_id')
+    combine_df = combine_df.merge(rank_for_df, left_on='team_id', right_on='team_id')
 
     # calculate league week avg, then merge into src df
     week_avg = combine_df.groupby(['matchup_period']).mean(numeric_only=True)['team_points']
-    combine_df = pd.merge(combine_df, week_avg,
+    combine_df = combine_df.merge(week_avg,
                           left_on='matchup_period',
                           right_on='matchup_period').rename(columns={'team_points_x': 'team_points',
                                                                      'team_points_y': 'week_avg'})
@@ -124,7 +126,7 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
 
     # determine current average score by player
     team_avg = combine_df.groupby(by='team_id')['team_points'].mean().reset_index()
-    combine_df = pd.merge(combine_df, team_avg, left_on='team_id', right_on='team_id') \
+    combine_df = combine_df.merge(team_avg, left_on='team_id', right_on='team_id') \
         .rename(columns={'team_points_x': 'team_points', 'team_points_y': 'team_avg_full'})
 
     # get highest/lowest points and win % for each team
@@ -258,7 +260,7 @@ def chart_draft_vs_final(data, week, path=None):
         for c in color_map(norm(values))
     ]
 
-    palette = dict(zip(diff_data['team_name'], colors))
+    palette = dict(zip(diff_data['team_name'], colors, strict=False))
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -312,8 +314,7 @@ def chart_all_play(data, week, path=None):
     all_play['all_play_ratio'] = all_play.all_play_win / (week * 11)
 
     actual_ratio = data.loc[data['matchup_period'] == week][['team_name', 'win_pct_ytd']]
-    all_play = pd.merge(
-        all_play,
+    all_play = all_play.merge(
         actual_ratio,
         how='left',
         left_on='team_name',
@@ -338,10 +339,7 @@ def chart_all_play(data, week, path=None):
                 alpha=0.7)
 
     for i, team in all_play.iterrows():
-        if team.ratio_diff < 0:
-            text = team.ratio_diff
-        else:
-            text = f'+{team.ratio_diff}'
+        text = team.ratio_diff if team.ratio_diff < 0 else f'+{team.ratio_diff}'
         plt.text(team.all_play_ratio + 0.01,
                  float(i),
                  text,
@@ -465,11 +463,11 @@ def chart_power_rank_by_week(data, week, path=None):
     ]
 
     team_order = sorted(data['team_name'].unique())
-    color_map = dict(zip(team_order, custom_palette))
+    color_map = dict(zip(team_order, custom_palette, strict=False))
 
     fig, ax = plt.subplots(figsize=(8, 5))
 
-    plot = sns.lineplot(
+    sns.lineplot(
         data=data,
         x='matchup_period',
         y='power_rank_ytd_asrank',
@@ -642,7 +640,7 @@ def curr_matchup_chart(data, curr_week, path=None):
 
     # add team name as labels to each point
     text = [plt.text(x, y, f'{name}', fontdict={'size': 9, 'color': '#4d5478'})
-            for (x, y, name) in zip(x_pt, y_pt, label)]
+            for (x, y, name) in zip(x_pt, y_pt, label, strict=False)]
     adjust_text(text, arrowprops={'arrowstyle': '-', 'color': '#9badc9', 'lw': 0.5})
 
     save_chart(path)
@@ -658,22 +656,3 @@ def print_and_save_charts(data, max_week=14, week_current=1):
     chart_power_rank_by_week(data, max_week, f'../outputs/7-power_ranking_by_week_max{max_week}.png')
     curr_powerrank_vs_rank(data, week_current, f'../outputs/8-week{week_current}_power_ranking.png')
     curr_matchup_chart(data, week_current, f'../outputs/9-week{week_current}_matchup_chart.png')
-
-
-if __name__ == '__main__':
-    year = 2025
-    week_max = 17  # set a max week (e.g. use 14 to only see regular season) **max 17**
-    current_week = 17  # set current week to use on charts that are specific to a single week **max 17**
-
-    # get data and create df
-    schedule_data, teams = fetch_boxscore_data(year)
-    draft_pos, rank_df = get_draftpos_rank(year)
-    score_df = create_matchup_data(schedule_data)
-    team_df = create_team_data(teams)
-    full_data = merge_transform_data(score_df, team_df, draft_pos, rank_df)
-
-    print_and_save_charts(full_data, week_max, current_week)
-
-    # prints for testing
-    print(full_data.head(24).sort_values(by='team_id').to_string())
-    full_data.to_excel('../outputs/weekly_score_data.xlsx', index=False)
