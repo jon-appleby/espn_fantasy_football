@@ -7,7 +7,7 @@ import seaborn as sns
 import numpy as np
 from adjustText import adjust_text
 
-from metrics.weekly_scripts.chart_utils import get_output_path, save_chart, set_chart_theme, CHART_FONTS
+from metrics.weekly.chart_utils import get_output_path, save_chart, set_chart_theme, CHART_FONTS
 
 
 def fetch_boxscore_data(curr_year):
@@ -128,18 +128,37 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
         .rename(columns={'team_points_x': 'team_points', 'team_points_y': 'team_avg_full'})
 
     # get highest/lowest points and win % for each team
-    high_points = combine_df.groupby(by='team_id')['team_points'].max().reset_index().rename(
-        columns={'team_points': 'team_hi_pts_full'})
-    low_points = combine_df.groupby(by='team_id')['team_points'].min().reset_index().rename(
-        columns={'team_points': 'team_lo_pts_full'})
-    win_pct = combine_df.groupby(by='team_id')['win'].mean().reset_index().rename(
+    high_points = (
+        combine_df
+        .groupby(by='team_id')['team_points']
+        .max()
+        .reset_index()
+        .rename(columns={'team_points': 'team_hi_pts_full'})
+    )
+    low_points = (
+        combine_df
+        .groupby(by='team_id')['team_points']
+        .min()
+        .reset_index()
+        .rename(columns={'team_points': 'team_lo_pts_full'})
+    )
+    win_pct = (
+        combine_df
+        .groupby(by='team_id')['win']
+        .mean()
+        .reset_index()
+        .rename(
         columns={'win': 'win_pct_full'})
-    combine_df = combine_df.merge(high_points, on='team_id') \
-        .merge(low_points, on='team_id') \
+    )
+    combine_df = (
+        combine_df
+        .merge(high_points, on='team_id')
+        .merge(low_points, on='team_id')
         .merge(win_pct, on='team_id')
+    )
 
     # determine power ranking by player for each week
-    #   ((avg score * 6) + ((highest score ytd + lowest score ytd) x 2) + ((win % x 200) x2) / 10
+    # ((avg score * 6) + ((highest score ytd + lowest score ytd) x 2) + ((win % x 200) x2) / 10
     combine_df['power_rank_full'] = (
                                             (
                                                     (combine_df['team_avg_full'] * 6) + combine_df['team_hi_pts_full']
@@ -149,19 +168,21 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
                                             )
                                     ) / 10
 
-    ####################
-    # create ytd stats #
-    ####################
+    # create ytd stats
     # sort dataframe to ensure we add up from the matchup periods before
     combine_df = combine_df.sort_values(by='matchup_period')
 
     # group the data by 'team_id' then calculate avg, hi, lo, and win pct
-    combine_df['team_avg_ytd'] = combine_df.groupby('team_id')['team_points'].cumsum() \
-                                 / combine_df.groupby('team_id').cumcount().add(1)
+    combine_df['team_avg_ytd'] = (
+            combine_df.groupby('team_id')['team_points'].cumsum() /
+            combine_df.groupby('team_id').cumcount().add(1)
+    )
     combine_df['team_hi_pts_ytd'] = combine_df.groupby('team_id')['team_points'].cummax()
     combine_df['team_lo_pts_ytd'] = combine_df.groupby('team_id')['team_points'].cummin()
-    combine_df['win_pct_ytd'] = combine_df.groupby('team_id')['win'].cumsum() \
-                                / combine_df.groupby('team_id').cumcount().add(1)
+    combine_df['win_pct_ytd'] = (
+            combine_df.groupby('team_id')['win'].cumsum() /
+            combine_df.groupby('team_id').cumcount().add(1)
+    )
 
     # create power rankings by week
     combine_df['power_rank_ytd'] = (
@@ -175,7 +196,8 @@ def merge_transform_data(scores_for_df, teams_for_df, draft_for_df, rank_for_df)
 
     combine_df['power_rank_ytd_asrank'] = combine_df.groupby('matchup_period')['power_rank_ytd'].rank(ascending=False)
 
-    # create all_play_win for each week, rank team points minus 1 to excluding "playing self"
+    # create all_play_win for each week
+    # rank team points minus 1 to excl "playing self"
     combine_df['all_play_win'] = combine_df.groupby('matchup_period')['team_points'].rank() - 1
 
     combine_df = combine_df.sort_values(by='matchup_period')
@@ -281,11 +303,22 @@ def chart_all_play(data, week, path=None):
     data = data.loc[data['matchup_period'] <= week]
 
     # all play win count, ratio, and actual ratio
-    all_play = data.groupby(data['team_name'])['all_play_win'].sum().sort_values(ascending=False).reset_index()
+    all_play = (data
+                .groupby(data['team_name'])['all_play_win']
+                .sum()
+                .sort_values(ascending=False)
+                .reset_index()
+                )
     all_play['all_play_ratio'] = all_play.all_play_win / (week * 11)
 
     actual_ratio = data.loc[data['matchup_period'] == week][['team_name', 'win_pct_ytd']]
-    all_play = pd.merge(all_play, actual_ratio, how='left', left_on='team_name', right_on='team_name')
+    all_play = pd.merge(
+        all_play,
+        actual_ratio,
+        how='left',
+        left_on='team_name',
+        right_on='team_name'
+    )
 
     # calc difference
     all_play['ratio_diff'] = round(all_play.win_pct_ytd - all_play.all_play_ratio, 2)
@@ -378,7 +411,12 @@ def chart_team_median(data, week, path=None):
     ]
 
     ax.set_xticks(range(len(labels)))
-    ax.set_xticklabels(labels, rotation=45, ha='right', fontsize=CHART_FONTS['tick'])
+    ax.set_xticklabels(
+        labels,
+        rotation=45,
+        ha='right',
+        fontsize=CHART_FONTS['tick']
+    )
 
     for label in ax.get_xticklabels():
         label.set_fontsize(CHART_FONTS['tick'])
@@ -400,7 +438,13 @@ def chart_team_opp_density(data, week, path=None):
     # team vs opponents
     grid = sns.FacetGrid(data, col='team_name', col_wrap=4)
 
-    grid.map_dataframe(sns.kdeplot, y='opp_points', x='team_points', fill=True, cmap='magma')
+    grid.map_dataframe(
+        sns.kdeplot,
+        y='opp_points',
+        x='team_points',
+        fill=True,
+        cmap='magma'
+    )
     grid.set_axis_labels(y_var='Opponent Points', x_var='Team Points')
     grid.set_titles(col_template='{col_name} Point Density')
 
@@ -505,7 +549,14 @@ def curr_powerrank_vs_rank(data, curr_week, path=None):
     rank_color = '#3da339'  # green
     rank_marker = 'o'
     power_rank_color = '#9c9c9c'  # grey
-    ax = sns.stripplot(data=data, x='team_name', y='rank', marker=rank_marker, size=10, color=rank_color)
+    ax = sns.stripplot(
+        data=data,
+        x='team_name',
+        y='rank',
+        marker=rank_marker,
+        size=10,
+        color=rank_color
+    )
 
     # Add line starting at o_pts and end at a_pts (flipped)
     ax.vlines(x=data['team_name'], ymin=data['power_rank_ytd_asrank'], ymax=data['rank'],

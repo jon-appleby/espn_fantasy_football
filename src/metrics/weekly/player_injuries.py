@@ -3,7 +3,7 @@ from time import sleep
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from metrics.weekly_scripts.actual_vs_optimal import create_team_slates
+from metrics.weekly.actual_vs_optimal import create_team_slates
 from espn.espn_client import fetch_api_data
 from espn.team_mapping import member_info
 

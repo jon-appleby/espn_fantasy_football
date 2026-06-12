@@ -3,19 +3,19 @@ from dotenv import load_dotenv
 
 from espn.espn_client import fetch_api_data
 from espn.team_mapping import member_info_df
-from metrics.weekly_scripts.actual_vs_optimal import (
+from metrics.weekly.actual_vs_optimal import (
     calculate_lineup_points,
     chart_actual_vs_optimal,
     create_lineup_efficiency,
     create_team_slates,
     get_matchup_team_order
 )
-from metrics.weekly_scripts.opponent_difficulty import (
+from metrics.weekly.opponent_difficulty import (
     create_opp_difficulty_data,
     summarize_opponent_difficulty,
     chart_opp_difficulty
 )
-from metrics.weekly_scripts.weekly_metrics import (
+from metrics.weekly.weekly_metrics import (
     fetch_boxscore_data,
     get_draftpos_rank,
     create_matchup_data,

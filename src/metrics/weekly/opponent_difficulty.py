@@ -4,8 +4,8 @@ import numpy as np
 import seaborn as sns
 import dataframe_image as dfi
 
-from metrics.weekly_scripts.chart_utils import set_chart_theme, CHART_FONTS
-from metrics.weekly_scripts.weekly_metrics import fetch_boxscore_data, create_matchup_data
+from metrics.weekly.chart_utils import set_chart_theme, CHART_FONTS
+from metrics.weekly.weekly_metrics import fetch_boxscore_data, create_matchup_data
 from espn.team_mapping import member_info
 from espn.espn_client import fetch_api_data
 

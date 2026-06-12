@@ -8,7 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from metrics.weekly_scripts.chart_utils import set_chart_theme, save_chart
+from metrics.weekly.chart_utils import set_chart_theme, save_chart
 
 load_dotenv()
 SWID = os.getenv("SWID")
@@ -190,7 +190,7 @@ from matplotlib.lines import Line2D
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from metrics.weekly_scripts.chart_utils import set_chart_theme, save_chart
+from metrics.weekly.chart_utils import set_chart_theme, save_chart
 
 
 def chart_actual_vs_optimal(data_input, curr_week=1, team_order=None, path=None):

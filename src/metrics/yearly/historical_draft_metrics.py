@@ -4,7 +4,8 @@ import pandas as pd
 from espn.team_mapping import member_info_df
 import time
 import seaborn as sns
-from sklearn.ensemble import RandomForestRegressor
+from pathlib import Path
+# from sklearn.ensemble import RandomForestRegressor
 
 
 def iterate_thru_years(max_year, min_year=2018):
@@ -48,7 +49,8 @@ def iterate_thru_years(max_year, min_year=2018):
         year += 1
         time.sleep(3)  # sleep x secs to avoid over requesting
 
-    combine_df.to_csv(f'../outputs/historical_draft_data_{min_year}-{max_year}.csv')
+    combine_df.to_csv(fr'C:/Users/apple/PythonProjects/espn_fantasy_football/outputs/historical_draft_data_{min_year}-{max_year}.csv')
+
     return combine_df
 
 
@@ -56,10 +58,12 @@ def chart_draft_v_rank(d):
     sns.set_theme(style='darkgrid', palette=None)
 
     # compare draft pos to rank
-    pos_rank = sns.regplot(data=d,
-                           x='draft_pos',
-                           y='rank',
-                           robust=True)
+    pos_rank = sns.regplot(
+        data=d,
+        x='draft_pos',
+        y='rank',
+        # robust=True
+    )
     pos_rank.invert_yaxis()
     plt.tight_layout()
     plt.show()
@@ -104,9 +108,9 @@ def predict_rank(d, curr_year, draft_pos):
 
 
 if __name__ == '__main__':
-    year_end = 2024
+    year_end = 2025
     year_start = 2018
-    current_year = 2025
+    current_year = 2026
     current_draft_pos = [
         {'draft_pos': 1, 'team_id': 9},
         {'draft_pos': 2, 'team_id': 2},
@@ -122,9 +126,10 @@ if __name__ == '__main__':
         {'draft_pos': 12, 'team_id': 6},
     ]
 
+    """use csv after running once to save on API calls"""
     # d = iterate_thru_years(min_year=year_start, max_year=year_end)
+    d = pd.read_csv(f'../../../outputs/historical_draft_data_{year_start}-{year_end}.csv')
+    print(d.corr())
 
-    """replace above 'data' with below file after running to save on API calls"""
-    d = pd.read_csv('../outputs/historical_draft_data_2018-2024.csv')
     chart_draft_v_rank(d)
-    predict_rank(d, curr_year=current_year, draft_pos=current_draft_pos)
+    # predict_rank(d, curr_year=current_year, draft_pos=current_draft_pos)
