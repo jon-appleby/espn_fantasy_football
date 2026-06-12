@@ -101,9 +101,9 @@ standings, since playoff timing and matchup structure can create different outco
 Jon also significantly "outperformed" draft position, moving from draft position 12 
 to final rank 2 while maintaining one of the strongest all-play profiles in the league.
 
-![Power Rank by Week](outputs/7-power_ranking_by_week_max17.png)
+![7-power_ranking_by_week_max17.png](docs/images/7-power_ranking_by_week_max17.png)
 
-![Team Median Scores](outputs/5-median_scores_max17.png)
+![Team Median Scores](docs/images/5-median_scores_max17.png)
 
 ### 2. All-play results exposed the effects of matchups and schedules
 
@@ -119,7 +119,7 @@ Matt and Prem had all-play ratios around 42.8% and 41.2%, but both finished with
 actual win rates of only 23.5%. This suggests both teams were less successful in actual 
 matchups and were impacted by difficult matchups.
 
-![All Play](outputs/4-all_play_wins17.png)
+![All Play](docs/images/4-all_play_wins17.png)
 
 ### 3. Opponent difficulty showed schedule variance
 
@@ -141,11 +141,11 @@ the impact of matchups. This helps identify matchup outcomes like hard-fought
 losses and lucky wins. For example, a team may win despite scoring below average
 if their opponent also had a bad week.
 
-![Weekly Opponent Difficulty](outputs/12-year_2025_opp_difficulty_heatmap.png)
+![Weekly Opponent Difficulty](docs/images/12-year_2025_opp_difficulty_heatmap.png)
 
-![Opponent Difficulty Summary](outputs/14-year_2025_opp_difficulty_summary.png)
+![Opponent Difficulty Summary](docs/images/14-year_2025_opp_difficulty_summary.png)
 
-![Matchups](outputs/9-week17_matchup_chart.png)
+![Matchups](docs/images/9-week17_matchup_chart.png)
 
 ### 4. Week 17 lineup efficiency had several missed-point opportunities
 
@@ -158,7 +158,7 @@ approximately 62.7 and 36.8 points on the bench respectively.
 This metric shows how a strong roster can still underperform if the 
 wrong players are started.
  
-![Actual vs Optimal Lineup](outputs/10-week17_actual_vs_optimal.png)
+![Actual vs Optimal Lineup](docs/images/10-week17_actual_vs_optimal.png)
 
 ## Example Output Files
 
