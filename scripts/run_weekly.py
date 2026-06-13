@@ -36,9 +36,9 @@ def main():
     team_df = member_info_df(SEASON)
     team_df = team_df[['id', 'user_name']].rename(columns={'user_name': 'team_name'})
 
-    # ------------ #
-    # MAIN METRICS #
-    # ------------ #
+    # -------------
+    # MAIN METRICS
+    # -------------
     schedule_data, _teams = fetch_boxscore_data(SEASON)
     draft_pos, rank_df = get_draftpos_rank(SEASON)
     score_df = create_matchup_data(schedule_data)
@@ -51,9 +51,9 @@ def main():
 
     matchup_team_order = get_matchup_team_order(full_data, WEEK)
 
-    # ---------------- #
-    # ACTUAL v OPTIMAL #
-    # ---------------- #
+    # -----------------
+    # ACTUAL v OPTIMAL
+    # -----------------
     slate_data = create_team_slates(
         fetch_api_data(
             views=['mMatchup', 'mMatchupScore'],
@@ -72,9 +72,9 @@ def main():
         team_order=matchup_team_order,
     )
 
-    # --------------- #
-    # SCORE ABOVE AVG #
-    # --------------- #
+    # ----------------
+    # SCORE ABOVE AVG
+    # ----------------
     d = create_opp_difficulty_data(SEASON)
     d.to_csv(f'../outputs/opponent_difficulty_{SEASON}.csv')
     summarize_opponent_difficulty(d, SEASON)
