@@ -2,6 +2,7 @@
 .venv/
 __pycache__/
 *.pyc
+.idea/
 
 # env vars
 .env
@@ -12,3 +13,4 @@ test/
 top_experts/input/
 *.csv
 *.xlsx
+TODO
