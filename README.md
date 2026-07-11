@@ -83,6 +83,26 @@ The script currently generates:
 
 Outputs are saved to the `outputs/` folder.
 
+### Running the Yearly Report
+
+Run `scripts/run_yearly.py` to create all-time datasets and chart outputs from 2018
+through the current calendar year.
+
+The yearly report follows the same data-pull and chart-output pattern as the weekly
+report, but combines completed full-season matchup data across seasons. Current-year
+matchups are included only after ESPN has completed scoring data.
+
+The script currently generates:
+
+- All-time overall ranking, sorted by all-play win percentage
+- Actual win/loss record, all-play win/loss record, and championships
+- Total points for and points against
+- Actual win percentage vs all-play win percentage
+- Individual head-to-head manager record heatmap
+- Submitted lineup projected vs actual points totals
+
+Outputs are saved to the `outputs/yearly/` folder.
+
 ## Example Metrics & Findings
 
 The examples below use the full 2025 season through Week 17. Some charts will show 
@@ -160,6 +180,19 @@ wrong players are started.
  
 ![Actual vs Optimal Lineup](docs/images/10-week17_actual_vs_optimal.png)
 
+### 5. All-time overall ranking
+
+This is a yearly metric combining weekly matchup data across 2018 to 2025 seasons 
+and plots actual win % against all-play win %.
+
+The dotted diagonal line splits the lucky from the unlucky - with those above it 
+underperforming their "deserved" record, and anyone below it overperformed.
+
+Jon has the best "true" record, with the highest all-play win % (.575) paired with a strong 
+actual record. Austin and Chris both have championship wins despite sitting at/below .500 in both metrics.
+
+![All-time Overall Ranking](docs/images/all_time_overall_ranking_2018-2026.png)
+
 ## Example Output Files
 
 | Output                                    | Description                                                                                                                     |
@@ -176,6 +209,21 @@ wrong players are started.
 | `10-week17_actual_vs_optimal.png`         | Actual vs optimal lineup score                                                                                                  |
 | `12-year_2025_opp_difficulty_heatmap.png` | Weekly opponent difficulty heatmap                                                                                              |
 | `14-year_2025_opp_difficulty_summary.png` | Average opponent difficulty by team                                                                                             |
+
+### Yearly Output Files
+
+| Output                                                  | Description                                                   |
+|---------------------------------------------------------|---------------------------------------------------------------|
+| `yearly_matchup_data_2018-current.csv`                  | Normalized full-season matchup-level rows by manager and week |
+| `yearly_finish_data_2018-current.csv`                   | ESPN final rank and championship flag by season               |
+| `all_time_summary_2018-current.csv`                     | Overall ranking, records, championships, and total points     |
+| `all_time_head_to_head_2018-current.csv`                | Manager-vs-manager head-to-head records                       |
+| `all_time_projected_vs_actual_summary_2018-current.csv` | Submitted lineup projected vs actual point totals             |
+| `all_time_overall_ranking_2018-current.png`             | All-time ranking chart sorted by all-play win percentage      |
+| `all_time_points_for_against_2018-current.png`          | Total points for and against chart                            |
+| `all_time_actual_vs_all_play_2018-current.png`          | Actual win rate compared with all-play win rate               |
+| `all_time_head_to_head_2018-current.png`                | Head-to-head records heatmap                                  |
+| `all_time_projected_vs_actual_2018-current.png`         | Submitted lineup projected vs actual point totals chart       |
 
 ## Limitations
 * ESPN does not provide official documentation for the API, so responses may change.

@@ -191,7 +191,7 @@ def get_matchup_team_order(weekly_data, week: int, winner_first: bool = True) ->
 
 
 def chart_actual_vs_optimal(data_input, curr_week=1, team_order=None, path=None):
-    set_chart_theme(style="white")
+    set_chart_theme(style="darkgrid")
 
     data = data_input.copy()
 
