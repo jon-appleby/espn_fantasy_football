@@ -207,7 +207,15 @@ def fetch_historical_matchup_data(
         end_year: int,
         pause_seconds: float = 1.0,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Pull and normalize yearly matchup and finish data from ESPN."""
+    """Pull and normalize yearly matchup and finish data from ESPN.
+
+    Only fully-completed seasons are included. A season with any
+    unplayed week (e.g. upcoming season before it starts, or still
+    in progress) is skipped via is_complete_season(), so callers
+    never have partial season data leaking into all-time
+    stats. end_year is just the upper bound to check up to; the actual last
+    included year may be earlier (see matchup_df['year'].max()).
+    """
 
     from espn.espn_client import fetch_api_data
 
@@ -224,8 +232,12 @@ def fetch_historical_matchup_data(
                 continue
             raise
 
+        if not is_complete_season(data):
+            print(f'skipping {year}: season not fully complete yet')
+            continue
+
         matchups.append(normalize_matchup_data(year, data))
-        finishes.append(normalize_finish_data(year, data, count_championships=is_complete_season(data)))
+        finishes.append(normalize_finish_data(year, data, count_championships=True))
 
         if pause_seconds:
             time.sleep(pause_seconds)
@@ -569,7 +581,7 @@ def chart_overall_ranking(summary: pd.DataFrame, path: str | Path | None = None)
     x_min, x_max = data['actual_win_pct'].min() - 0.02, data['actual_win_pct'].max() + 0.02
     y_min, y_max = data['all_play_win_pct'].min() - 0.02, data['all_play_win_pct'].max() + 0.02
 
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots(figsize=(11, 6.5))
 
     # reference line where all-play and actual win rates match
     ref_min, ref_max = min(x_min, y_min), max(x_max, y_max)
@@ -673,7 +685,7 @@ def chart_scoring_overview(
     min_val = values.min(axis=1)
     max_val = values.max(axis=1)
 
-    fig, ax = plt.subplots(figsize=(11, max(6, len(data) * 0.45)))
+    fig, ax = plt.subplots(figsize=(11, max(6.5, len(data) * 0.45)))
     ax.hlines(
         y=data['manager_name'],
         xmin=min_val,
@@ -744,7 +756,7 @@ def chart_actual_vs_all_play(summary: pd.DataFrame, path: str | Path | None = No
     set_chart_theme_func(style="darkgrid")
     data = summary.sort_values('all_play_win_pct', ascending=True).copy()
 
-    fig, ax = plt.subplots(figsize=(11, max(6, len(data) * 0.45)))
+    fig, ax = plt.subplots(figsize=(11, max(6.5, len(data) * 0.45)))
     ax.barh(data['manager_name'], data['all_play_win_pct'], color='#1c6689', label='All-play', alpha=0.9)
     ax.barh(data['manager_name'], data['actual_win_pct'], color='#b0b0b0', label='Actual', alpha=0.7)
 
@@ -801,7 +813,7 @@ def chart_head_to_head_heatmap(
             heatmap_data.loc[manager, manager] = np.nan
             annotations.loc[manager, manager] = ''
 
-    fig, ax = plt.subplots(figsize=(12, 9))
+    fig, ax = plt.subplots(figsize=(11, 9))
     sns.heatmap(
         heatmap_data,
         cmap='RdYlGn',

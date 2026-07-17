@@ -137,7 +137,7 @@ def chart_injuries(data, max_week_num):
                       '#1f4b99', '#8c564b', '#17becf', '#b06b2f']
     filtered = data.groupby(by=['team_name', 'week'])['player_status_weight'].sum().reset_index()
 
-    fig, ax = plt.subplots(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(11, 6.5))
 
     sns.barplot(data=filtered,
                 x='week',

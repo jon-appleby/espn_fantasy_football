@@ -49,7 +49,7 @@ def create_opp_difficulty_data(year):
     return df
 
 
-def chart_opp_difficulty(data, year):
+def chart_opp_difficulty(data, year, week):
     """
     Creates two charts:
     1. Heatmap showing opponent points above/below cumulative average by team and week.
@@ -94,7 +94,7 @@ def chart_opp_difficulty(data, year):
 
     max_abs = np.nanmax(np.abs(heatmap_data.to_numpy()))
 
-    fig, ax = plt.subplots(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(11, 6.5))
 
     sns.heatmap(
         heatmap_data,
@@ -118,7 +118,7 @@ def chart_opp_difficulty(data, year):
     ax.tick_params(axis='y', labelsize=CHART_FONTS['label'])
 
     plt.tight_layout()
-    plt.savefig(f'../outputs/12-year_{year}_opp_difficulty_heatmap.png', bbox_inches='tight')
+    plt.savefig(f'../outputs/weekly/12-{year}_{week}_opp_difficulty_heatmap.png', bbox_inches='tight')
     plt.show()
 
     # ------------------------ #
@@ -132,7 +132,7 @@ def chart_opp_difficulty(data, year):
         '#2e8b57'   # easier / lucky
     )
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(11, 6.5))
 
     bars = ax.barh(
         summary['team1_name'],
@@ -179,10 +179,10 @@ def chart_opp_difficulty(data, year):
         ha='right'
     )
 
-    save_chart(f'../outputs/14-year_{year}_opp_difficulty_summary.png', fig=fig)
+    save_chart(f'../outputs/weekly/14-{year}_{week}_opp_difficulty_summary.png', fig=fig)
 
 
-def summarize_opponent_difficulty(data: pd.DataFrame, year):
+def summarize_opponent_difficulty(data: pd.DataFrame, year, week):
     df = data[['team1_name']].drop_duplicates('team1_name')
 
     data_above = data.loc[data['opp_avg_diff'] > 0]
@@ -216,6 +216,6 @@ def summarize_opponent_difficulty(data: pd.DataFrame, year):
     df = df.reset_index()
     df['rank'] = df['team'].map(team_ranks)
 
-    dfi.export(df, f'../outputs/13-year_{year}_opponent_difficulty_table.png', table_conversion='matplotlib')
+    dfi.export(df, f'../outputs/weekly/13-{year}_{week}_opponent_difficulty_table.png', table_conversion='matplotlib')
 
     return df

@@ -262,7 +262,7 @@ def chart_draft_vs_final(data, week, path=None):
 
     palette = dict(zip(diff_data['team_name'], colors, strict=False))
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(11, 6.5))
 
     sns.barplot(
         data=diff_data,
@@ -324,7 +324,7 @@ def chart_all_play(data, week, path=None):
     # calc difference
     all_play['ratio_diff'] = round(all_play.win_pct_ytd - all_play.all_play_ratio, 2)
 
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(11, 6.5))
     sns.barplot(data=all_play,
                 y='team_name',
                 x='all_play_ratio',
@@ -385,7 +385,7 @@ def chart_team_median(data, week, path=None):
         .to_dict()
     )
 
-    fig, ax = plt.subplots(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(11, 6.5))
 
     sns.boxplot(
         data=data,
@@ -465,7 +465,7 @@ def chart_power_rank_by_week(data, week, path=None):
     team_order = sorted(data['team_name'].unique())
     color_map = dict(zip(team_order, custom_palette, strict=False))
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(11, 6.5))
 
     sns.lineplot(
         data=data,
@@ -646,13 +646,13 @@ def curr_matchup_chart(data, curr_week, path=None):
     save_chart(path)
 
 
-def print_and_save_charts(data, max_week=14, week_current=1):
-    chart_draft_pos_rank(data, max_week, f'../outputs/1-pos_to_rank_max{max_week}.png')
-    chart_draft_vs_final(data, max_week, f'../outputs/2-diff_draft_to_final_max{max_week}.png')
-    chart_week_avg(data, max_week, f'../outputs/3-weekly_avg_scores_max{max_week}.png')
-    chart_all_play(data, max_week, f'../outputs/4-all_play_wins{max_week}.png')
-    chart_team_median(data, max_week, f'../outputs/5-median_scores_max{max_week}.png')
+def print_and_save_charts(data, curr_season, max_week=14, week_current=1):
+    chart_draft_pos_rank(data, max_week, f'../outputs/weekly/1-pos_to_rank_{curr_season}_max{max_week}.png')
+    chart_draft_vs_final(data, max_week, f'../outputs/weekly/2-diff_draft_to_final_{curr_season}_max{max_week}.png')
+    chart_week_avg(data, max_week, f'../outputs/weekly/3-weekly_avg_scores_{curr_season}_max{max_week}.png')
+    chart_all_play(data, max_week, f'../outputs/weekly/4-all_play_wins_{curr_season}_{max_week}.png')
+    chart_team_median(data, max_week, f'../outputs/weekly/5-median_scores_{curr_season}_max{max_week}.png')
     # chart_team_opp_density(data, max_week, f'../outputs/6-score_against_opp_density_max{max_week}.png')
-    chart_power_rank_by_week(data, max_week, f'../outputs/7-power_ranking_by_week_max{max_week}.png')
-    curr_powerrank_vs_rank(data, week_current, f'../outputs/8-week{week_current}_power_ranking.png')
-    curr_matchup_chart(data, week_current, f'../outputs/9-week{week_current}_matchup_chart.png')
+    chart_power_rank_by_week(data, max_week, f'../outputs/weekly/7-power_ranking_by_week_{curr_season}_max{max_week}.png')
+    curr_powerrank_vs_rank(data, week_current, f'../outputs/weekly/8-{curr_season}_{week_current}_power_ranking.png')
+    curr_matchup_chart(data, week_current, f'../outputs/weekly/9-{curr_season}_{week_current}_matchup_chart.png')

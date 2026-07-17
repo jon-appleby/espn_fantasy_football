@@ -190,7 +190,7 @@ def get_matchup_team_order(weekly_data, week: int, winner_first: bool = True) ->
     return team_order
 
 
-def chart_actual_vs_optimal(data_input, curr_week=1, team_order=None, path=None):
+def chart_actual_vs_optimal(data_input, curr_season, curr_week=1, team_order=None, path=None):
     set_chart_theme(style="darkgrid")
 
     data = data_input.copy()
@@ -220,7 +220,7 @@ def chart_actual_vs_optimal(data_input, curr_week=1, team_order=None, path=None)
 
     data["plot_y"] = data["team_name"].astype(str).map(y_map)
 
-    fig, ax = plt.subplots(figsize=(11, 8))
+    fig, ax = plt.subplots(figsize=(11, 6.5))
 
     #----------------------#
     # shaded matchup bands #
@@ -352,6 +352,6 @@ def chart_actual_vs_optimal(data_input, curr_week=1, team_order=None, path=None)
     )
 
     if path is None:
-        path = f"../outputs/10-week{curr_week}_actual_vs_optimal.png"
+        path = f"../outputs/weekly/10-{curr_season}_{curr_week}_actual_vs_optimal.png"
 
     save_chart(path, fig=fig)

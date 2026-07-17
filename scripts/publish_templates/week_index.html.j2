@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Fantasy Ballers - {{ season }} - Week {{ week }}</title>
+  <link rel="stylesheet" href="/assets/site.css" />
+</head>
+<body>
+  <div class="page">
+    <div class="app">
+      <header class="app-header">
+        <div class="brand">
+          <h1>Fantasy Football</h1>
+          <span class="subtitle">Week {{ week }} · {{ season }} Season</span>
+        </div>
+        <div></div>
+      </header>
+
+      {% include "_sidebar.html.j2" %}
+
+      <main class="app-main">
+        <section class="content-card">
+          <h2>Week {{ week }} - {{ season }} Season</h2>
+          <p><a href="/ff/">&larr; Back to Fantasy Football</a></p>
+        </section>
+
+        <section class="content-card wide">
+          <div class="chart-grid">
+            {% for chart in charts %}
+            <div class="chart-card">
+              <h3>{{ chart.title }}</h3>
+              <img src="/ff/{{ season }}/week-{{ week_padded }}/charts/{{ chart.filename }}"
+                   alt="{{ chart.title }}" loading="lazy" />
+              <p class="chart-desc">{{ chart.description }}</p>
+            </div>
+            {% endfor %}
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

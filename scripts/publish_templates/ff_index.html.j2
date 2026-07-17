@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>jonm.app - Fantasy Football</title>
+  <link rel="stylesheet" href="/assets/site.css" />
+</head>
+<body>
+  <div class="page">
+    <div class="app">
+      <header class="app-header">
+        <div class="brand">
+          <h1>Fantasy Football</h1>
+          <span class="subtitle">Fantasy Football Metrics</span>
+        </div>
+        <div></div>
+      </header>
+
+      {% include "_sidebar.html.j2" %}
+
+      <main class="app-main">
+        <section class="content-card">
+          <h2>Fantasy Football Metrics</h2>
+          <p>Weekly & Yearly Fantasy Football Metrics</p>
+        </section>
+
+        <section class="content-card">
+          <h2>Weekly Reports</h2>
+          {% for season, weeks in weekly_seasons.items() %}
+          <details class="season-group">
+            <summary>{{ season }}</summary>
+            <ul class="week-links">
+              {% for w in weeks %}
+              <li><a href="/ff/{{ season }}/week-{{ '%02d' | format(w) }}/">Week {{ w }}</a></li>
+              {% endfor %}
+            </ul>
+          </details>
+          {% endfor %}
+
+          {% if yearly_seasons %}
+          <h2 class="section-gap">Yearly Reports</h2>
+          <div class="year-links">
+            {% for season in yearly_seasons %}
+            <a href="/ff/yearly/{{ season }}/">{{ season }}</a>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
