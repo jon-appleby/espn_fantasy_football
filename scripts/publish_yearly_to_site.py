@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # repo root, fo
 from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from src.common.ff_site import render_ff_index
+from src.common.ff_site import discover_weeks, discover_years, render_ff_index, sync_static_pages
 from src.common.paths import (
     TEMPLATES_DIR,
     YEARLY_OUTPUTS_DIR,
@@ -151,13 +151,19 @@ def main() -> None:
         lstrip_blocks=True,
     )
 
+    weekly_seasons = discover_weeks(ff_dir)
+    yearly_seasons = discover_years(ff_dir)
+
     yearly_html = env.get_template("yearly_index.html.j2").render(
         start_year=start_year, end_year=end_year, charts=published,
+        weekly_seasons=weekly_seasons, yearly_seasons=yearly_seasons,
+        current_year=end_year,
     )
     (year_dir / "index.html").write_text(yearly_html, encoding="utf-8")
     print(f"  wrote:     {year_dir / 'index.html'}")
 
     render_ff_index(env, ff_dir)
+    sync_static_pages(env, site_repo)
 
     print("\nDone. Review the diff in jonm_site, then commit/push.")
 

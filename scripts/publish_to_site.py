@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # repo root, fo
 from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from src.common.ff_site import render_ff_index
+from src.common.ff_site import discover_weeks, discover_years, render_ff_index, sync_static_pages
 from src.common.paths import (
     TEMPLATES_DIR,
     WEEKLY_OUTPUTS_DIR,
@@ -178,15 +178,21 @@ def main(season: int, week: int) -> None:
         lstrip_blocks=True,
     )
 
+    # week_dir/charts already has this week's files on disk at this point,
+    # so these directory scans pick it up automatically.
+    weekly_seasons = discover_weeks(ff_dir)
+    yearly_seasons = discover_years(ff_dir)
+
     week_html = env.get_template("week_index.html.j2").render(
         season=season, week=week, week_padded=week_padded, charts=published,
+        weekly_seasons=weekly_seasons, yearly_seasons=yearly_seasons,
+        current_season=str(season), current_week=week,
     )
     (week_dir / "index.html").write_text(week_html, encoding="utf-8")
     print(f"  wrote:     {week_dir / 'index.html'}")
 
-    # week_dir/charts already has this week's files on disk at this point,
-    # so render_ff_index()'s directory scan picks it up automatically.
     render_ff_index(env, ff_dir)
+    sync_static_pages(env, site_repo)
 
     print("\nDone. Review the diff in jonm_site, then commit/push.")
 

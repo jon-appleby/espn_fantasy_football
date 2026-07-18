@@ -6,6 +6,7 @@
   <meta name="color-scheme" content="dark" />
   <title>jonm.app - Fantasy Football</title>
   <link rel="stylesheet" href="/assets/site.css" />
+  <script src="/assets/site.js" defer></script>
 </head>
 <body>
   <div class="page">
@@ -23,30 +24,24 @@
       <main class="app-main">
         <section class="content-card">
           <h2>Fantasy Football Metrics</h2>
-          <p>Weekly & Yearly Fantasy Football Metrics</p>
-        </section>
-
-        <section class="content-card">
-          <h2>Weekly Reports</h2>
-          {% for season, weeks in weekly_seasons.items() %}
-          <details class="season-group">
-            <summary>{{ season }}</summary>
-            <ul class="week-links">
-              {% for w in weeks %}
-              <li><a href="/ff/{{ season }}/week-{{ '%02d' | format(w) }}/">Week {{ w }}</a></li>
-              {% endfor %}
-            </ul>
-          </details>
-          {% endfor %}
-
-          {% if yearly_seasons %}
-          <h2 class="section-gap">Yearly Reports</h2>
-          <div class="year-links">
-            {% for season in yearly_seasons %}
-            <a href="/ff/yearly/{{ season }}/">{{ season }}</a>
-            {% endfor %}
-          </div>
-          {% endif %}
+          <p>
+            This project is an end-to-end fantasy football analytics pipeline built in Python using data
+            extracted from the ESPN Fantasy Football API. It transforms nested league, matchup, roster, scoring,
+            and standings data into structured datasets and repeatable visual reports. The project demonstrates
+            API integration, data cleansing and transformation, custom metric development, and data
+            visualization.<br>
+            <i>(Requests, Pandas, Matplotlib, Seaborn)</i>
+          </p>
+          <br>
+          <p>
+            The analysis goes beyond standard league standings and evaluates the factors that influence team
+            performance. Weekly metrics include custom power rankings, scoring trends, all-play records,
+            opponent difficulty, draft-position performance, and lineup efficiency based on actual versus
+            optimal roster choices. Multi-season reporting extends the analysis across league history with
+            manager rankings, championships, points scored and allowed, head-to-head records, schedule-luck
+            indicators, and projected-versus-actual lineup performance.
+          </p>
+          <p>Browse weekly and yearly reports using the sidebar.</p>
         </section>
       </main>
     </div>

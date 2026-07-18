@@ -1,0 +1,34 @@
+<div class="nav-item{% if current_season %} expanded{% endif %}">
+  <button type="button" class="nav-row-toggle">
+    <span class="nav-link nav-label">Weekly Reports</span>
+    <span class="nav-toggle" aria-hidden="true">&rsaquo;</span>
+  </button>
+  <div class="nav-children">
+    {% for season, weeks in weekly_seasons.items() %}
+    <div class="nav-item{% if season == current_season %} expanded{% endif %}">
+      <button type="button" class="nav-row-toggle">
+        <span class="nav-link nav-label">{{ season }}</span>
+        <span class="nav-toggle" aria-hidden="true">&rsaquo;</span>
+      </button>
+      <div class="nav-children">
+        {% for w in weeks %}
+        <a href="/ff/{{ season }}/week-{{ '%02d' | format(w) }}/" class="nav-link{% if season == current_season and w == current_week %} active{% endif %}">Week {{ w }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% if yearly_seasons %}
+<div class="nav-item{% if current_year %} expanded{% endif %}">
+  <button type="button" class="nav-row-toggle">
+    <span class="nav-link nav-label">Yearly Reports</span>
+    <span class="nav-toggle" aria-hidden="true">&rsaquo;</span>
+  </button>
+  <div class="nav-children">
+    {% for y in yearly_seasons %}
+    <a href="/ff/yearly/{{ y }}/" class="nav-link{% if y == current_year %} active{% endif %}">{{ y }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

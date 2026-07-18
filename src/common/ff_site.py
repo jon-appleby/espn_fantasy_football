@@ -1,13 +1,20 @@
 """Shared helpers for publishing weekly/yearly fantasy football reports to jonm_site.
 
 Used by both scripts/publish_to_site.py (weekly) and
-scripts/publish_yearly_to_site.py (yearly) so the ff/ landing page always
-reflects whatever has actually been published, regardless of which script
-ran most recently.
+scripts/publish_yearly_to_site.py (yearly) so the ff/ landing page - and the
+Fantasy Football nav branch embedded in jonm_site's hand-authored static
+pages (About, Experience, Projects, ...) - always reflect whatever has
+actually been published, regardless of which script ran most recently.
 """
+import re
 from pathlib import Path
 
 from jinja2 import Environment
+
+FF_NAV_MARKER_RE = re.compile(
+    r"(<!-- ff-nav:start -->)(.*?)(<!-- ff-nav:end -->)",
+    re.DOTALL,
+)
 
 
 def discover_weeks(ff_dir: Path) -> dict[str, list[int]]:
@@ -51,3 +58,44 @@ def render_ff_index(env: Environment, ff_dir: Path) -> None:
     )
     (ff_dir / "index.html").write_text(html, encoding="utf-8")
     print(f"  wrote:     {ff_dir / 'index.html'}")
+
+
+def render_ff_nav_fragment(env: Environment, ff_dir: Path) -> str:
+    """Render just the Weekly/Yearly Reports nav subtree (no wrapping page)."""
+    weekly_seasons = discover_weeks(ff_dir)
+    yearly_seasons = discover_years(ff_dir)
+    return env.get_template("_ff_nav_children.html.j2").render(
+        weekly_seasons=weekly_seasons, yearly_seasons=yearly_seasons,
+        current_season=None, current_week=None, current_year=None,
+    )
+
+
+def sync_static_pages(env: Environment, site_repo: Path) -> None:
+    """Refresh the Fantasy Football nav subtree embedded in jonm_site's
+    hand-authored static pages (About, Experience, Projects, ...), which
+    have no build step of their own. Any .html file under public/ (EXCLUDING
+    public/ff/ itself) containing <!-- ff-nav:start --> ... <!-- ff-nav:end -->
+    markers gets the content between them replaced with the current
+    weekly/yearly report list. public/ff/ pages are skipped here because
+    they're rendered directly with their own page-specific context (e.g. the
+    current week/year auto-expanded and marked active) - overwriting them
+    with this generic, context-less fragment would clobber that.
+    """
+    ff_dir = site_repo / "public" / "ff"
+    fragment = render_ff_nav_fragment(env, ff_dir)
+    updated = 0
+    for html_file in (site_repo / "public").rglob("*.html"):
+        if ff_dir in html_file.parents:
+            continue
+        text = html_file.read_text(encoding="utf-8")
+        if "<!-- ff-nav:start -->" not in text:
+            continue
+        new_text = FF_NAV_MARKER_RE.sub(
+            lambda m: f"{m.group(1)}\n{fragment}{m.group(3)}", text,
+        )
+        if new_text != text:
+            html_file.write_text(new_text, encoding="utf-8")
+            updated += 1
+            print(f"  synced nav: {html_file.relative_to(site_repo)}")
+    if updated:
+        print(f"  ({updated} static page(s) had their Fantasy Football nav refreshed)")
