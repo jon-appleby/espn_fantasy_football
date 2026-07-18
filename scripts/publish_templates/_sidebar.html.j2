@@ -11,12 +11,7 @@
       </div>
 
       <div class="nav-item">
-        <div class="nav-row">
-          <a href="/projects/" class="nav-link">Projects</a>
-          <button type="button" class="nav-toggle-btn" aria-label="Toggle Projects">
-            <span class="nav-toggle" aria-hidden="true">&rsaquo;</span>
-          </button>
-        </div>
+        <a href="/projects/" class="nav-link">Projects</a>
         <div class="nav-children">
           <a href="/projects/project-1/" class="nav-link">Project 1</a>
           <a href="/projects/project-2/" class="nav-link">Project 2</a>
@@ -24,12 +19,7 @@
       </div>
 
       <div class="nav-item expanded">
-        <div class="nav-row">
-          <a href="/ff/" class="nav-link active">Fantasy Football</a>
-          <button type="button" class="nav-toggle-btn" aria-label="Toggle Fantasy Football">
-            <span class="nav-toggle" aria-hidden="true">&rsaquo;</span>
-          </button>
-        </div>
+        <a href="/ff/" class="nav-link active">Fantasy Football</a>
         <div class="nav-children">
           <!-- ff-nav:start -->
           {% include "_ff_nav_children.html.j2" %}
